@@ -3,286 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PolyClone Prediction Market</title>
+    <title>PolyClone App</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
-
     <style>
-        :root { --tg-theme-button-color: #2481cc; --tg-theme-text-color: #000; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; margin: 0; padding: 15px; color: var(--tg-theme-text-color); }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .wallet-btn { background-color: var(--tg-theme-button-color); color: white; border: none; padding: 8px 15px; border-radius: 20px; font-weight: bold; cursor: pointer; }
-        .card { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
-        .market-title { font-size: 1.2rem; font-weight: bold; margin-bottom: 10px; color: #1a1a1a; }
-        .odds-container { display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 0.9rem; color: #666; }
-        .btn-group { display: flex; gap: 10px; }
-        .bet-btn { flex: 1; border: none; padding: 12px; border-radius: 10px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: opacity 0.2s; }
-        .btn-yes { background-color: #27ae60; color: white; }
-        .btn-no { background-color: #e74c3c; color: white; }
-        .bet-btn:active { opacity: 0.7; }
-        #status { text-align: center; font-size: 0.8rem; color: #888; margin-top: 10px; }
+        body { font-family: -apple-system, sans-serif; background: #f4f4f9; padding: 15px; }
+        .card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .title { font-weight: bold; margin-bottom: 10px; }
+        .btn-group { display: flex; gap: 8px; }
+        button { flex: 1; padding: 10px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .yes { background: #27ae60; color: white; }
+        .no { background: #e74c3c; color: white; }
+        #connectBtn { background: #2481cc; color: white; width: 100%; margin-bottom: 20px; }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <h3>🔮 PolyClone</h3>
-        <button id="connectBtn" class="wallet-btn" onclick="connectWallet()">Cüzdan Bağla</button>
-    </div>
-
-    <div id="market-list">
-        <div class="card">
-            <div class="market-title">Bitcoin bu ay sonu 100.000$ barajını geçer mi?</div>
-            <div class="odds-container">
-                <span>👍 Evet: %65</span>
-                <span>👎 Hayır: %35</span>
-            </div>
-            <div class="btn-group">
-                <button class="bet-btn btn-yes" onclick="makeBet(true)">EVET</button>
-                <button class="bet-btn btn-no" onclick="makeBet(false)">HAYIR</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="status">Cüzdan bağlı değil</div>
+    <button id="connectBtn" onclick="connectWallet()">Cüzdan Bağla</button>
+    <div id="market-container">Piyasalar yükleniyor...</div>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // --- BURAYI GÜNCELLE ---
-        const contractAddress = "0xd9145CCE52D386f254917e481eB44e9943F39138";
-        const contractABI = [[
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "_marketId",
-				"type": "uint256"
-			},
-			{
-				"internalType": "bool",
-				"name": "_tahmin",
-				"type": "bool"
-			}
-		],
-		"name": "bahisYap",
-		"outputs": [],
-		"stateMutability": "payable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "_marketId",
-				"type": "uint256"
-			}
-		],
-		"name": "kazancCek",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "string",
-				"name": "_soru",
-				"type": "string"
-			},
-			{
-				"internalType": "uint256",
-				"name": "_sureSaniye",
-				"type": "uint256"
-			}
-		],
-		"name": "piyasaOlustur",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "_marketId",
-				"type": "uint256"
-			},
-			{
-				"internalType": "bool",
-				"name": "_kazananSonuc",
-				"type": "bool"
-			}
-		],
-		"name": "piyasayiBitir",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"stateMutability": "nonpayable",
-		"type": "constructor"
-	},
-	{
-		"inputs": [],
-		"name": "admin",
-		"outputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			},
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"name": "bahisler",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "miktar",
-				"type": "uint256"
-			},
-			{
-				"internalType": "bool",
-				"name": "tahmin",
-				"type": "bool"
-			},
-			{
-				"internalType": "bool",
-				"name": "odendi",
-				"type": "bool"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"name": "marketler",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "id",
-				"type": "uint256"
-			},
-			{
-				"internalType": "string",
-				"name": "soru",
-				"type": "string"
-			},
-			{
-				"internalType": "uint256",
-				"name": "bitisZamani",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "evetBakiye",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "hayirBakiye",
-				"type": "uint256"
-			},
-			{
-				"internalType": "bool",
-				"name": "sonuclandi",
-				"type": "bool"
-			},
-			{
-				"internalType": "bool",
-				"name": "sonuc",
-				"type": "bool"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "marketSayisi",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	}
-]
+        const contractAddress = "REMIX_KONTART_ADRESI";
+        const contractABI = [...]; // Buraya ABI'yi yapıştır
 
-        ];
-
-        let signer;
-        let contract;
+        let provider, signer, contract;
 
         async function connectWallet() {
-            if (typeof window.ethereum !== 'undefined') {
-                try {
-                    const provider = new ethers.providers.Web3Provider(window.ethereum);
-                    await provider.send("eth_requestAccounts", []);
-                    signer = provider.getSigner();
-                    const address = await signer.getAddress();
-
-                    contract = new ethers.Contract(contractAddress, contractABI, signer);
-
-                    document.getElementById('connectBtn').innerText = address.substring(0, 6) + "...";
-                    document.getElementById('status').innerText = "Cüzdan Bağlandı: " + address;
-                    tg.showAlert("Bağlantı Başarılı!");
-                } catch (error) {
-                    console.error(error);
-                    tg.showAlert("Bağlantı hatası oluştu.");
-                }
+            if (window.ethereum) {
+                provider = new ethers.providers.Web3Provider(window.ethereum);
+                await provider.send("eth_requestAccounts", []);
+                signer = provider.getSigner();
+                contract = new ethers.Contract(contractAddress, contractABI, signer);
+                document.getElementById('connectBtn').innerText = "Bağlandı";
+                loadMarkets();
             } else {
-                tg.showAlert("Lütfen Metamask veya TrustWallet yüklü bir tarayıcıdan açın.");
+                tg.showAlert("Lütfen Metamask tarayıcısından açın.");
             }
         }
 
-        async function makeBet(prediction) {
-            if (!contract) {
-                tg.showAlert("Lütfen önce cüzdanınızı bağlayın!");
-                return;
-            }
+        async function loadMarkets() {
+            const container = document.getElementById('market-container');
+            container.innerHTML = "";
 
             try {
-                // Bahis miktarı (Örn: 0.01 MATIC)
-                const amount = ethers.utils.parseEther("0.01");
+                const count = await contract.marketSayisi();
+                for (let i = 1; i <= count; i++) {
+                    const m = await contract.marketler(i);
+                    if (m.sonuclandi) continue;
 
-                // Remix'teki bahisYap(marketId, tahmin) fonksiyonunu çağırır
-                // Not: Market ID'sini şimdilik 1 olarak sabitledik
-                const tx = await contract.bahisYap(1, prediction, { value: amount });
+                    container.innerHTML += `
+                        <div class="card">
+                            <div class="title">${m.soru}</div>
+                            <div class="btn-group">
+                                <button class="yes" onclick="makeBet(${i}, true)">EVET</button>
+                                <button class="no" onclick="makeBet(${i}, false)">HAYIR</button>
+                            </div>
+                        </div>
+                    `;
+                }
+            } catch (e) {
+                container.innerText = "Hata: " + e.message;
+            }
+        }
 
-                tg.showConfirm("İşlem blokzincire gönderildi. Onaylanmasını bekleyin...");
+        async function makeBet(id, vote) {
+            if (!contract) return tg.showAlert("Önce cüzdan bağla!");
+            try {
+                const tx = await contract.bahisYap(id, vote, { value: ethers.utils.parseEther("0.01") });
+                tg.showConfirm("İşlem gönderildi, onay bekleniyor...");
                 await tx.wait();
-                tg.showAlert("İşlem Başarılı! Bahsiniz alındı.");
-            } catch (error) {
-                console.error(error);
-                tg.showAlert("İşlem başarısız: " + error.message);
+                tg.showAlert("Bahis Başarılı!");
+            } catch (e) {
+                tg.showAlert("Hata: " + e.message);
             }
         }
     </script>
