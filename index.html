@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PolyClone Market</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js"></script>
+    <style>
+        body { font-family: sans-serif; background: #f4f4f9; color: #333; padding: 20px; }
+        .card { background: white; border-radius: 12px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 15px; }
+        .btn-group { display: flex; gap: 10px; margin-top: 10px; }
+        button { flex: 1; padding: 10px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .yes { background: #27ae60; color: white; }
+        .no { background: #e74c3c; color: white; }
+    </style>
+</head>
+<body>
+    <h2>🔥 Aktif Piyasalar</h2>
+
+    <div class="card">
+        <h3>Bitcoin 100k olur mu?</h3>
+        <p>Oranlar: %65 Evet / %35 Hayır</p>
+        <div class="btn-group">
+            <button class="yes" onclick="makeBet(true)">EVET</button>
+            <button class="no" onclick="makeBet(false)">HAYIR</button>
+        </div>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand(); // Ekranı tam boy yapar
+
+        function makeBet(result) {
+            tg.showConfirm(result ? "EVET demeye emin misin?" : "HAYIR demeye emin misin?", (ok) => {
+                if (ok) {
+                    tg.sendData("bet_clicked_" + result); // Bot tarafına veri gönderir
+                    tg.close();
+                }
+            });
+        }
+    </script>
+</body>
+</html>
