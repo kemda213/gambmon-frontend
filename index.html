@@ -10,23 +10,24 @@
         body { font-family: -apple-system, sans-serif; background: #f4f4f9; padding: 15px; color: #333; }
         .card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-left: 5px solid #2481cc; }
         .title { font-weight: bold; font-size: 1.1em; margin-bottom: 10px; color: #2c3e50; }
-        .stats { font-size: 0.9em; color: #666; margin-bottom: 12px; display: flex; justify-content: space-between; }
+        .stats { font-size: 0.85em; color: #666; margin-bottom: 12px; display: flex; justify-content: space-between; background: #f9f9f9; padding: 8px; border-radius: 6px; }
         .btn-group { display: flex; gap: 8px; }
-        button { flex: 1; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: opacity 0.2s; }
-        button:active { opacity: 0.7; }
+        button { flex: 1; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: active 0.1s; }
+        button:active { transform: scale(0.98); }
         .yes { background: #27ae60; color: white; }
         .no { background: #e74c3c; color: white; }
-        #connectBtn { background: #2481cc; color: white; width: 100%; margin-bottom: 20px; font-size: 1em; }
-        #walletInfo { text-align: center; font-size: 0.8em; margin-bottom: 10px; color: #2481cc; font-weight: bold; }
+        #connectBtn { background: #2481cc; color: white; width: 100%; margin-bottom: 20px; font-size: 1em; height: 45px; }
+        #walletInfo { text-align: center; font-size: 0.8em; margin-bottom: 10px; color: #2481cc; font-weight: bold; word-break: break-all; }
+        .loading { text-align: center; color: #999; margin-top: 20px; }
     </style>
 </head>
 <body>
 
     <div id="walletInfo"></div>
-    <button id="connectBtn" onclick="connectWallet()">Cüzdan Bağla</button>
+    <button id="connectBtn" onclick="connectWallet()">🦊 Cüzdan Bağla</button>
 
     <div id="market-container">
-        <p style="text-align:center;">Piyasaları görmek için cüzdan bağlayın.</p>
+        <p class="loading">Piyasaları görmek için lütfen cüzdanınızı bağlayın.</p>
     </div>
 
     <script>
@@ -51,6 +52,21 @@
         async function connectWallet() {
             if (window.ethereum) {
                 try {
+                    // 1. Ağı kontrol et (Amoy Testnet: 80002 -> Hex: 0x13882)
+                    const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+                    if (chainId !== '0x13882') {
+                        try {
+                            await window.ethereum.request({
+                                method: 'wallet_switchEthereumChain',
+                                params: [{ chainId: '0x13882' }],
+                            });
+                        } catch (err) {
+                            tg.showAlert("Lütfen cüzdanınızdan Polygon Amoy ağını seçin!");
+                            return;
+                        }
+                    }
+
+                    // 2. Bağlantıyı kur
                     provider = new ethers.providers.Web3Provider(window.ethereum);
                     await provider.send("eth_requestAccounts", []);
                     signer = provider.getSigner();
@@ -59,31 +75,34 @@
                     contract = new ethers.Contract(contractAddress, contractABI, signer);
 
                     document.getElementById('connectBtn').style.display = "none";
-                    document.getElementById('walletInfo').innerText = "Cüzdan: " + address.substring(0,6) + "..." + address.substring(38);
+                    document.getElementById('walletInfo').innerText = "Bağlı: " + address;
 
                     loadMarkets();
                 } catch (e) {
-                    tg.showAlert("Bağlantı reddedildi.");
+                    console.error(e);
+                    tg.showAlert("Cüzdan bağlantı hatası!");
                 }
             } else {
-                tg.showAlert("Lütfen Metamask (veya Web3 tarayıcı) kullanın.");
+                tg.showAlert("Lütfen MetaMask veya Trust Wallet gibi bir Web3 tarayıcı kullanın.");
             }
         }
 
         async function loadMarkets() {
             const container = document.getElementById('market-container');
-            container.innerHTML = "<p style='text-align:center;'>Piyasalar okunuyor...</p>";
+            container.innerHTML = "<p class='loading'>Piyasalar yükleniyor...</p>";
 
             try {
-                const count = await contract.marketSayisi();
+                // marketSayisi fonksiyonunu çağır
+                const rawCount = await contract.marketSayisi();
+                const count = parseInt(rawCount.toString());
+
                 container.innerHTML = "";
 
-                if (count == 0) {
-                    container.innerHTML = "<p style='text-align:center;'>Henüz piyasa oluşturulmadı.</p>";
+                if (count === 0) {
+                    container.innerHTML = "<p class='loading'>Henüz aktif piyasa yok.</p>";
                     return;
                 }
 
-                // Döngü 0'dan başlar (Solidity array kuralı)
                 for (let i = 0; i < count; i++) {
                     const m = await contract.marketler(i);
                     if (m.sonuclandi) continue;
@@ -95,8 +114,8 @@
                         <div class="card">
                             <div class="title">${m.soru}</div>
                             <div class="stats">
-                                <span>✅ Evet: <b>${evet} MATIC</b></span>
-                                <span>❌ Hayır: <b>${hayir} MATIC</b></span>
+                                <span>✅ Evet: <b>${evet}</b></span>
+                                <span>❌ Hayır: <b>${hayir}</b></span>
                             </div>
                             <div class="btn-group">
                                 <button class="yes" onclick="makeBet(${i}, true)">EVET</button>
@@ -106,26 +125,24 @@
                     `;
                 }
             } catch (e) {
-                container.innerText = "Yükleme Hatası: " + e.message;
+                console.error(e);
+                container.innerHTML = `<p style="color:red; text-align:center;">Hata: Kontrat verisi okunamadı. Lütfen Amoy ağında olduğunuzdan emin olun.</p>`;
             }
         }
 
         async function makeBet(id, vote) {
-            if (!contract) return tg.showAlert("Önce cüzdan bağla!");
-
-            const miktar = "0.1"; // Standart bahis miktarı (İstersen prompt ile değiştirebilirsin)
-
             try {
+                // Sabit bahis miktarı
                 const tx = await contract.bahisYap(id, vote, {
-                    value: ethers.utils.parseEther(miktar)
+                    value: ethers.utils.parseEther("0.1")
                 });
 
-                tg.showConfirm("İşlem blokzincirine gönderildi. Bekleyiniz...");
+                tg.showConfirm("İşlem blokzincirine gönderildi. Lütfen bekleyin...");
                 await tx.wait();
-                tg.showAlert("Tebrikler! Bahis alındı.");
-                loadMarkets(); // Listeyi güncelle
+                tg.showAlert("Bahis başarıyla alındı!");
+                loadMarkets();
             } catch (e) {
-                tg.showAlert("İşlem başarısız veya reddedildi.");
+                tg.showAlert("İşlem reddedildi veya yetersiz bakiye.");
             }
         }
     </script>
