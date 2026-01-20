@@ -85,7 +85,7 @@
                 // En son piyasayı en üstte göstermek için count-1'den başlatıyoruz
                 for (let i = count - 1; i >= 0; i--) {
                     const m = await contract.marketler(i);
-                    
+
                     let actionHtml = "";
                     if (!m.sonuclandi) {
                         actionHtml = `
@@ -120,9 +120,9 @@
         async function makeBet(id, vote) {
             try {
                 // RPC Hatasını önlemek için gaz limitini artırdık
-                const tx = await contract.bahisYap(id, vote, { 
-                    value: ethers.utils.parseEther("0.1"),
-                    gasLimit: 300000 
+                const tx = await contract.bahisYap(id, vote, {
+                    value: ethers.utils.parseEther("0.001"),
+                    gasLimit: 100000
                 });
                 tg.showConfirm("İşlem onay bekliyor...");
                 await tx.wait();
