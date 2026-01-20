@@ -3,37 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gambdom - Tahmin Pazarı</title>
-    <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js" type="application/javascript"></script>
+    <title>Gambdom | Tahmin Pazarı</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #1a1a1a; color: white; text-align: center; padding: 20px; }
-        .container { max-width: 600px; margin: auto; }
-        .card { background: #2d2d2d; border-radius: 15px; padding: 20px; margin: 15px 0; border: 1px solid #444; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
-        .btn { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin: 5px; transition: 0.3s; }
-        .btn-connect { background-color: #f39c12; color: white; font-size: 1.1em; }
-        .btn-yes { background-color: #27ae60; color: white; width: 40%; }
-        .btn-no { background-color: #c0392b; color: white; width: 40%; }
-        .btn:hover { opacity: 0.8; transform: scale(1.05); }
-        .stats { font-size: 0.9em; color: #aaa; margin-top: 10px; }
+        :root { --bg: #0f172a; --card: #1e293b; --accent: #38bdf8; --yes: #22c55e; --no: #ef4444; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: white; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 100%; max-width: 500px; }
+        h1 { color: var(--accent); letter-spacing: 2px; text-shadow: 0 0 10px rgba(56, 189, 248, 0.3); }
+        .btn { padding: 12px 24px; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; transition: 0.2s; width: 100%; margin-bottom: 20px; }
+        .btn-connect { background: linear-gradient(45deg, #0ea5e9, #2563eb); color: white; box-shadow: 0 4px 14px 0 rgba(37, 99, 235, 0.39); }
+        .btn-connect:hover { transform: translateY(-2px); opacity: 0.9; }
+        .card { background: var(--card); border-radius: 20px; padding: 20px; margin-bottom: 20px; border: 1px solid #334155; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        .vote-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+        .btn-yes { background: var(--yes); color: white; }
+        .btn-no { background: var(--no); color: white; }
+        .stats { display: flex; justify-content: space-between; margin-top: 15px; font-size: 0.85em; color: #94a3b8; font-weight: 600; }
+        #status { font-size: 0.9em; margin-bottom: 10px; color: var(--accent); }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h1>🎲 GAMBDOM</h1>
-    <button id="connectBtn" class="btn btn-connect" onclick="connectWallet()">Cüzdanı Bağla</button>
-    
-    <div id="status" style="margin-top: 10px; color: #27ae60;"></div>
-    <hr style="border: 0.5px solid #444; margin: 20px 0;">
+    <div id="status">Sistem hazır, cüzdan bekleniyor...</div>
+    <button id="connectBtn" class="btn btn-connect">Cüzdanı Bağla</button>
 
     <div id="market-list">
-        <p>Lütfen cüzdanınızı bağlayın...</p>
-    </div>
+        </div>
 </div>
 
 <script>
-    // --- AYARLAR ---
-    const contractAddress = "0x3bF8f905308F8760bfEAAC9256d814AdF790FE89"; 
+    // --- KONFİGÜRASYON ---
+    const contractAddress = "0x3bF8f905308F8760bfEAAC9256d814AdF790FE89";
     const abi = [
         "function piyasalar(uint256) view returns (string soru, uint256 evetOyu, uint256 hayirOyu, bool bitti)",
         "function piyasaSayisi() view returns (uint256)",
@@ -42,80 +43,90 @@
 
     let provider, signer, contract;
 
-    async function connectWallet() {
-        if (typeof window.ethereum !== 'undefined') {
-            try {
-                await window.ethereum.request({ method: 'eth_requestAccounts' });
-                provider = new ethers.providers.Web3Provider(window.ethereum);
-                signer = provider.getSigner();
-                contract = new ethers.Contract(contractAddress, abi, signer);
-                
-                const address = await signer.getAddress();
-                document.getElementById('connectBtn').innerText = "Bağlandı: " + address.substring(0,6) + "...";
-                document.getElementById('status').innerText = "Bağlantı Başarılı!";
-                
-                loadMarkets();
-            } catch (error) {
-                console.error("Bağlantı hatası:", error);
-            }
-        } else {
-            alert("Lütfen MetaMask yükleyin!");
+    // --- CÜZDAN BAĞLAMA ---
+    async function connect() {
+        if (!window.ethereum) {
+            alert("MetaMask bulunamadı! Lütfen MetaMask yüklü bir tarayıcı kullanın.");
+            return;
+        }
+
+        try {
+            document.getElementById('status').innerText = "MetaMask onayı bekleniyor...";
+            
+            // Hesaplara erişim iste
+            const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+            
+            // Ethers objelerini oluştur
+            provider = new ethers.providers.Web3Provider(window.ethereum);
+            signer = provider.getSigner();
+            contract = new ethers.Contract(contractAddress, abi, signer);
+
+            document.getElementById('connectBtn').innerText = "Bağlandı: " + accounts[0].substring(0,6) + "...";
+            document.getElementById('status').innerText = "Bağlantı başarılı, piyasalar yükleniyor...";
+            
+            loadMarkets();
+        } catch (error) {
+            console.error("Hata:", error);
+            document.getElementById('status').innerText = "Bağlantı hatası!";
         }
     }
 
+    // --- PİYASALARI YÜKLE ---
     async function loadMarkets() {
         const list = document.getElementById('market-list');
-        list.innerHTML = "Piyasalar yükleniyor...";
-        
         try {
             const count = await contract.piyasaSayisi();
             list.innerHTML = "";
 
-            if (count == 0) {
-                list.innerHTML = "Henüz aktif bir piyasa yok.";
+            if (count.toNumber() === 0) {
+                list.innerHTML = "<p>Henüz açılmış bir piyasa yok.</p>";
                 return;
             }
 
             for (let i = 0; i < count; i++) {
                 const m = await contract.piyasalar(i);
-                
-                // Wei'den Ether'e (POL) çeviriyoruz
                 const yesVotes = ethers.utils.formatEther(m.evetOyu);
                 const noVotes = ethers.utils.formatEther(m.hayirOyu);
 
                 list.innerHTML += `
                     <div class="card">
-                        <h3>${m.soru}</h3>
-                        <button class="btn btn-yes" onclick="bet(${i}, true)">EVET</button>
-                        <button class="btn btn-no" onclick="bet(${i}, false)">HAYIR</button>
+                        <div style="font-weight: bold; font-size: 1.1em;">${m.soru}</div>
+                        <div class="vote-btns">
+                            <button class="btn btn-yes" style="margin:0" onclick="bet(${i}, true)">EVET</button>
+                            <button class="btn btn-no" style="margin:0" onclick="bet(${i}, false)">HAYIR</button>
+                        </div>
                         <div class="stats">
-                            Evet: ${yesVotes} POL | Hayır: ${noVotes} POL
+                            <span>👍 ${yesVotes} POL</span>
+                            <span>👎 ${noVotes} POL</span>
                         </div>
                     </div>`;
             }
+            document.getElementById('status').innerText = "Tüm piyasalar güncel.";
         } catch (error) {
             console.error("Yükleme hatası:", error);
-            list.innerHTML = "Veriler çekilemedi!";
+            list.innerHTML = "<p>Veriler çekilemedi. Adres veya ağ yanlış olabilir.</p>";
         }
     }
 
+    // --- BAHİS YAP ---
     async function bet(id, choice) {
         try {
-            // Her bahis için standart 0.01 POL gönderiyoruz
+            document.getElementById('status').innerText = "İşlem gönderiliyor...";
             const tx = await contract.bahisYap(id, choice, {
-                value: ethers.utils.parseEther("0.01")
+                value: ethers.utils.parseEther("0.01") // 0.01 POL bahis
             });
-            
-            document.getElementById('status').innerText = "İşlem gönderildi, onay bekleniyor...";
             await tx.wait();
-            document.getElementById('status').innerText = "Bahis Başarılı!";
-            
-            loadMarkets(); // Listeyi güncelle
+            document.getElementById('status').innerText = "Bahis onaylandı!";
+            loadMarkets();
         } catch (error) {
             console.error("Bahis hatası:", error);
-            alert("Bahis yapılamadı. Bakiyenizi kontrol edin.");
+            alert("İşlem başarısız!");
+            document.getElementById('status').innerText = "İşlem iptal edildi.";
         }
     }
+
+    // Buton dinleyicisini bağla
+    document.getElementById('connectBtn').onclick = connect;
 </script>
 
 </body>
