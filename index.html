@@ -16,9 +16,13 @@
         button:active { transform: scale(0.98); }
         .yes { background: #27ae60; color: white; }
         .no { background: #e74c3c; color: white; }
+        .claim { background: #f39c12; color: white; width: 100%; margin-top: 5px; }
         #connectBtn { background: #2481cc; color: white; width: 100%; margin-bottom: 20px; font-size: 1em; height: 45px; }
         #walletInfo { text-align: center; font-size: 0.8em; margin-bottom: 10px; color: #2481cc; font-weight: bold; word-break: break-all; }
         .loading { text-align: center; color: #999; margin-top: 20px; }
+        .status-tag { font-size: 0.7em; padding: 3px 8px; border-radius: 4px; float: right; }
+        .open { background: #d4edda; color: #155724; }
+        .closed { background: #f8d7da; color: #721c24; }
     </style>
 </head>
 <body>
@@ -40,11 +44,8 @@
             {"inputs": [{"internalType": "uint256","name": "_marketId","type": "uint256"}],"name": "kazancCek","outputs": [],"stateMutability": "nonpayable","type": "function"},
             {"inputs": [{"internalType": "string","name": "_soru","type": "string"},{"internalType": "uint256","name": "_sureSaniye","type": "uint256"}],"name": "piyasaOlustur","outputs": [],"stateMutability": "nonpayable","type": "function"},
             {"inputs": [{"internalType": "uint256","name": "_marketId","type": "uint256"},{"internalType": "bool","name": "_kazananSonuc","type": "bool"}],"name": "piyasayiBitir","outputs": [],"stateMutability": "nonpayable","type": "function"},
-            {"inputs": [],"stateMutability": "nonpayable","type": "constructor"},
-            {"inputs": [],"name": "admin","outputs": [{"internalType": "address","name": "","type": "address"}],"stateMutability": "view","type": "function"},
-            {"inputs": [{"internalType": "uint256","name": "","type": "uint256"},{"internalType": "address","name": "","type": "address"}],"name": "bahisler","outputs": [{"internalType": "uint256","name": "miktar","type": "uint256"},{"internalType": "bool","name": "tahmin","type": "bool"},{"internalType": "bool","name": "odendi","type": "bool"}],"stateMutability": "view","type": "function"},
-            {"inputs": [{"internalType": "uint256","name": "","type": "uint256"}],"name": "marketler","outputs": [{"internalType": "uint256","name": "id","type": "uint256"},{"internalType": "string","name": "soru","type": "string"},{"internalType": "uint256","name": "bitisZamani","type": "uint256"},{"internalType": "uint256","name": "evetBakiye","type": "uint256"},{"internalType": "uint256","name": "hayirBakiye","type": "uint256"},{"internalType": "bool","name": "sonuclandi","type": "bool"},{"internalType": "bool","name": "sonuc","type": "bool"}],"stateMutability": "view","type": "function"},
-            {"inputs": [],"name": "marketSayisi","outputs": [{"internalType": "uint256","name": "","type": "uint256"}],"stateMutability": "view","type": "function"}
+            {"inputs": [],"stateMutability": "view","name": "marketSayisi","outputs": [{"internalType": "uint256","name": "","type": "uint256"}]},
+            {"inputs": [{"internalType": "uint256","name": "","type": "uint256"}],"name": "marketler","outputs": [{"internalType": "uint256","name": "id","type": "uint256"},{"internalType": "string","name": "soru","type": "string"},{"internalType": "uint256","name": "bitisZamani","type": "uint256"},{"internalType": "uint256","name": "evetBakiye","type": "uint256"},{"internalType": "uint256","name": "hayirBakiye","type": "uint256"},{"internalType": "bool","name": "sonuclandi","type": "bool"},{"internalType": "bool","name": "sonuc","type": "bool"}],"stateMutability": "view","type": "function"}
         ];
 
         let provider, signer, contract;
@@ -52,26 +53,10 @@
         async function connectWallet() {
             if (window.ethereum) {
                 try {
-                    // 1. Ağı kontrol et (Amoy Testnet: 80002 -> Hex: 0x13882)
-                    const chainId = await window.ethereum.request({ method: 'eth_chainId' });
-                    if (chainId !== '0x13882') {
-                        try {
-                            await window.ethereum.request({
-                                method: 'wallet_switchEthereumChain',
-                                params: [{ chainId: '0x13882' }],
-                            });
-                        } catch (err) {
-                            tg.showAlert("Lütfen cüzdanınızdan Polygon Amoy ağını seçin!");
-                            return;
-                        }
-                    }
-
-                    // 2. Bağlantıyı kur
                     provider = new ethers.providers.Web3Provider(window.ethereum);
                     await provider.send("eth_requestAccounts", []);
                     signer = provider.getSigner();
                     const address = await signer.getAddress();
-
                     contract = new ethers.Contract(contractAddress, contractABI, signer);
 
                     document.getElementById('connectBtn').style.display = "none";
@@ -79,71 +64,76 @@
 
                     loadMarkets();
                 } catch (e) {
-                    console.error(e);
-                    tg.showAlert("Cüzdan bağlantı hatası!");
+                    tg.showAlert("Bağlantı hatası!");
                 }
             } else {
-                tg.showAlert("Lütfen MetaMask veya Trust Wallet gibi bir Web3 tarayıcı kullanın.");
+                tg.showAlert("Lütfen bir Web3 tarayıcı kullanın.");
             }
         }
 
         async function loadMarkets() {
             const container = document.getElementById('market-container');
-            container.innerHTML = "<p class='loading'>Piyasalar yükleniyor...</p>";
+            container.innerHTML = "<p class='loading'>Veriler çekiliyor...</p>";
 
             try {
-                // marketSayisi fonksiyonunu çağır
-                const rawCount = await contract.marketSayisi();
-                const count = parseInt(rawCount.toString());
-
+                const count = await contract.marketSayisi();
                 container.innerHTML = "";
 
-                if (count === 0) {
+                if (count == 0) {
                     container.innerHTML = "<p class='loading'>Henüz aktif piyasa yok.</p>";
                     return;
                 }
 
-                for (let i = 0; i < count; i++) {
+                // Ters döngü: En yeni piyasa en üstte görünsün
+                for (let i = count - 1; i >= 0; i--) {
                     const m = await contract.marketler(i);
-                    if (m.sonuclandi) continue;
 
-                    const evet = ethers.utils.formatEther(m.evetBakiye);
-                    const hayir = ethers.utils.formatEther(m.hayirBakiye);
-
-                    container.innerHTML += `
-                        <div class="card">
-                            <div class="title">${m.soru}</div>
-                            <div class="stats">
-                                <span>✅ Evet: <b>${evet}</b></span>
-                                <span>❌ Hayır: <b>${hayir}</b></span>
-                            </div>
+                    let buttons = "";
+                    if (!m.sonuclandi) {
+                        buttons = `
                             <div class="btn-group">
                                 <button class="yes" onclick="makeBet(${i}, true)">EVET</button>
                                 <button class="no" onclick="makeBet(${i}, false)">HAYIR</button>
+                            </div>`;
+                    } else {
+                        buttons = `<button class="claim" onclick="claimReward(${i})">💰 KAZANCI ÇEK</button>`;
+                    }
+
+                    container.innerHTML += `
+                        <div class="card">
+                            <span class="status-tag ${m.sonuclandi ? 'closed' : 'open'}">
+                                ${m.sonuclandi ? 'Bitti' : 'Aktif'}
+                            </span>
+                            <div class="title">${m.soru}</div>
+                            <div class="stats">
+                                <span>Evet: <b>${ethers.utils.formatEther(m.evetBakiye)}</b></span>
+                                <span>Hayır: <b>${ethers.utils.formatEther(m.hayirBakiye)}</b></span>
                             </div>
+                            ${buttons}
                         </div>
                     `;
                 }
             } catch (e) {
-                console.error(e);
-                container.innerHTML = `<p style="color:red; text-align:center;">Hata: Kontrat verisi okunamadı. Lütfen Amoy ağında olduğunuzdan emin olun.</p>`;
+                container.innerHTML = "Hata: " + e.message;
             }
         }
 
         async function makeBet(id, vote) {
             try {
-                // Sabit bahis miktarı
-                const tx = await contract.bahisYap(id, vote, {
-                    value: ethers.utils.parseEther("0.1")
-                });
-
-                tg.showConfirm("İşlem blokzincirine gönderildi. Lütfen bekleyin...");
+                const tx = await contract.bahisYap(id, vote, { value: ethers.utils.parseEther("0.1") });
                 await tx.wait();
-                tg.showAlert("Bahis başarıyla alındı!");
+                tg.showAlert("Bahis alındı!");
                 loadMarkets();
-            } catch (e) {
-                tg.showAlert("İşlem reddedildi veya yetersiz bakiye.");
-            }
+            } catch (e) { tg.showAlert("Hata!"); }
+        }
+
+        async function claimReward(id) {
+            try {
+                const tx = await contract.kazancCek(id);
+                await tx.wait();
+                tg.showAlert("Kazanç çekildi!");
+                loadMarkets();
+            } catch (e) { tg.showAlert("Çekilecek bakiye yok!"); }
         }
     </script>
 </body>
