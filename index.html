@@ -9,22 +9,32 @@
     <style>
         body { font-family: sans-serif; background: #f4f4f9; padding: 20px; text-align: center; }
         .market-card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .btn { padding: 10px 20px; margin: 5px; border: none; border-radius: 5px; cursor: pointer; color: white; font-weight: bold; }
+        .btn { padding: 12px 24px; margin: 5px; border: none; border-radius: 8px; cursor: pointer; color: white; font-weight: bold; transition: 0.3s; }
+        .btn-connect { background: #007bff; font-size: 1.1em; box-shadow: 0 4px 10px rgba(0,123,255,0.3); }
         .btn-yes { background: #28a745; }
         .btn-no { background: #dc3545; }
-        .status { font-size: 0.8em; color: #666; margin-top: 10px; }
+        .status { font-size: 0.85em; color: #666; margin: 15px 0; }
+        #markets { margin-top: 20px; }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
     <h2>🏆 Tahmin Pazarı</h2>
-    <div id="wallet-address" class="status">Cüzdan bağlı değil</div>
-    <div id="markets">Piyasalar yükleniyor...</div>
+    
+    <div id="connect-area">
+        <p>İşlem yapmak için cüzdanınızı bağlamanız gerekiyor.</p>
+        <button class="btn btn-connect" onclick="connectWallet()">🦊 Cüzdanı Bağla</button>
+    </div>
+
+    <div id="wallet-info" class="hidden">
+        <div id="wallet-address" class="status">Cüzdan: Bağlanıyor...</div>
+        <div id="markets">Piyasalar yükleniyor...</div>
+    </div>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // SENİN BİLGİLERİN
         const contractAddress = "0x8929e710202167d60f4e38e6e58f0003080c98ec";
         const abi = [
             "function piyasalar(uint256) view returns (string, uint256, uint256, uint256, bool, bool)",
@@ -34,19 +44,29 @@
 
         let provider, signer, contract;
 
-        async function init() {
+        async function connectWallet() {
             if (window.ethereum) {
-                provider = new ethers.providers.Web3Provider(window.ethereum);
-                await provider.send("eth_requestAccounts", []);
-                signer = provider.getSigner();
-                contract = new ethers.Contract(contractAddress, abi, signer);
-
-                const address = await signer.getAddress();
-                document.getElementById('wallet-address').innerText = "Cüzdan: " + address.substring(0,6) + "..." + address.substring(38);
-
-                loadMarkets();
+                try {
+                    // Cüzdan bağlama isteği
+                    provider = new ethers.providers.Web3Provider(window.ethereum);
+                    await provider.send("eth_requestAccounts", []);
+                    signer = provider.getSigner();
+                    contract = new ethers.Contract(contractAddress, abi, signer);
+                    
+                    const address = await signer.getAddress();
+                    
+                    // Arayüzü güncelle
+                    document.getElementById('connect-area').classList.add('hidden');
+                    document.getElementById('wallet-info').classList.remove('hidden');
+                    document.getElementById('wallet-address').innerText = "Cüzdan: " + address.substring(0,6) + "..." + address.substring(38);
+                    
+                    loadMarkets();
+                } catch (error) {
+                    console.error("Bağlantı hatası:", error);
+                    alert("Cüzdan bağlantısı reddedildi.");
+                }
             } else {
-                alert("Lütfen MetaMask yüklü bir tarayıcıdan girin.");
+                alert("MetaMask bulunamadı! Lütfen MetaMask tarayıcısından girin.");
             }
         }
 
@@ -56,7 +76,6 @@
                 let html = "";
                 for (let i = 0; i < count; i++) {
                     const m = await contract.piyasalar(i);
-                    // m[0]: Soru, m[4]: Bitti mi?, m[5]: Geçerli mi?
                     if (!m[4]) { // Sadece bitmemiş piyasaları göster
                         html += `
                             <div class="market-card">
@@ -71,31 +90,25 @@
                 document.getElementById('markets').innerHTML = html || "Aktif piyasa bulunamadı.";
             } catch (e) {
                 console.error(e);
-                document.getElementById('markets').innerHTML = "Piyasalar yüklenirken hata oluştu.";
+                document.getElementById('markets').innerHTML = "Piyasalar yüklenirken bir hata oluştu.";
             }
         }
 
         async function makeBet(id, vote) {
             try {
-                // ELİNDEKİ 0.01 POL BAKİYESİNE GÖRE AYARLANDI
-                const tx = await contract.bahisYap(id, vote, {
-                    value: ethers.utils.parseEther("0.001"), // Sadece 0.001 POL harcar
-                    gasLimit: 100000 // Gaz ücretini sınırladık
+                const tx = await contract.bahisYap(id, vote, { 
+                    value: ethers.utils.parseEther("0.001"),
+                    gasLimit: 100000 
                 });
-
-                tg.showAlert("İşlem onay bekliyor, lütfen bekleyin...");
+                
+                tg.showAlert("İşlem blockchain'e gönderildi...");
                 await tx.wait();
-                tg.showAlert("Tebrikler! Bahis başarıyla yapıldı.");
+                tg.showAlert("Başarılı! Bahis yapıldı.");
                 loadMarkets();
             } catch (e) {
-                console.error(e);
-                // Detaylı hata mesajı
-                const errorMsg = e.data?.message || e.message;
-                alert("İşlem Başarısız: " + errorMsg);
+                alert("Hata: " + (e.data?.message || e.message));
             }
         }
-
-        init();
     </script>
 </body>
 </html>
