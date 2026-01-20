@@ -2,45 +2,29 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tahmin Pazarı v2</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tahmin Pazarı</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root { --primary: #007bff; --success: #28a745; --danger: #dc3545; --bg: #f8f9fa; }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); padding: 20px; text-align: center; }
-        .container { max-width: 450px; margin: 0 auto; }
-        .market-card { background: white; border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: 1px solid #eee; }
-        .btn { padding: 14px 24px; margin: 8px; border: none; border-radius: 12px; cursor: pointer; color: white; font-weight: bold; font-size: 15px; transition: 0.2s; }
-        .btn:active { transform: scale(0.96); opacity: 0.9; }
-        .btn-connect { background: var(--primary); width: 100%; font-size: 17px; margin-top: 15px; }
-        .btn-yes { background: var(--success); }
-        .btn-no { background: var(--danger); }
-        .status-pill { font-size: 0.85em; color: #555; background: #e9ecef; padding: 8px 15px; border-radius: 20px; display: inline-block; margin-bottom: 15px; }
-        .hidden { display: none; }
-        h2 { color: #1a1a1a; margin-bottom: 5px; }
-        p { color: #666; font-size: 0.95em; }
+        body { font-family: sans-serif; background: #f4f4f9; padding: 20px; text-align: center; }
+        .market-card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .btn { padding: 10px 20px; margin: 5px; border: none; border-radius: 5px; cursor: pointer; color: white; font-weight: bold; }
+        .btn-yes { background: #28a745; }
+        .btn-no { background: #dc3545; }
+        .status { font-size: 0.8em; color: #666; margin-top: 10px; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2>🏆 Tahmin Pazarı</h2>
-
-        <div id="connect-area">
-            <p>Tahmin yapmak için cüzdanınızı bağlayın.</p>
-            <button class="btn btn-connect" onclick="connectWallet()">🦊 MetaMask'ı Bağla</button>
-        </div>
-
-        <div id="app-area" class="hidden">
-            <div id="wallet-address" class="status-pill">Cüzdan: Aranıyor...</div>
-            <div id="markets">Piyasalar yükleniyor...</div>
-        </div>
-    </div>
+    <h2>🏆 Tahmin Pazarı</h2>
+    <div id="wallet-address" class="status">Cüzdan bağlanıyor...</div>
+    <div id="markets">Piyasalar yükleniyor...</div>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
 
+        // SENİN KONTRAKT ADRESİN
         const contractAddress = "0x8929e710202167d60f4e38e6e58f0003080c98ec";
         const abi = [
             "function piyasalar(uint256) view returns (string, uint256, uint256, uint256, bool, bool)",
@@ -50,41 +34,25 @@
 
         let provider, signer, contract;
 
-        async function connectWallet() {
-            // Ethers kütüphanesi yüklendi mi kontrolü
-            if (typeof ethers === 'undefined') {
-                alert("Sistem henüz hazır değil, lütfen 2 saniye bekleyip tekrar basın.");
-                return;
-            }
-
+        async function init() {
             if (typeof window.ethereum !== 'undefined') {
                 try {
-                    // MetaMask tetikleme
-                    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-                    const account = accounts[0];
-
+                    // Sayfa açılır açılmaz cüzdanı tetikle (Eski usul)
                     provider = new ethers.providers.Web3Provider(window.ethereum);
+                    await provider.send("eth_requestAccounts", []);
                     signer = provider.getSigner();
                     contract = new ethers.Contract(contractAddress, abi, signer);
-
-                    // Görünümü Değiştir
-                    document.getElementById('connect-area').classList.add('hidden');
-                    document.getElementById('app-area').classList.remove('hidden');
-                    document.getElementById('wallet-address').innerText = "Cüzdan: " + account.substring(0,6) + "..." + account.substring(38);
-
-                    // Ağ Kontrolü (Amoy Testnet: 80002)
-                    const network = await provider.getNetwork();
-                    if (network.chainId !== 80002) {
-                        alert("Lütfen MetaMask'tan 'Polygon Amoy' ağına geçiş yapın!");
-                    }
-
+                    
+                    const address = await signer.getAddress();
+                    document.getElementById('wallet-address').innerText = "Cüzdan: " + address;
+                    
                     loadMarkets();
-                } catch (error) {
-                    console.error(error);
-                    alert("Cüzdan bağlantısı başarısız: " + error.message);
+                } catch (e) {
+                    console.error(e);
+                    document.getElementById('markets').innerHTML = "Cüzdan bağlantısı reddedildi.";
                 }
             } else {
-                alert("MetaMask bulunamadı! Lütfen MetaMask tarayıcısından açın.");
+                alert("MetaMask yüklü değil!");
             }
         }
 
@@ -94,42 +62,42 @@
                 let html = "";
                 for (let i = 0; i < count; i++) {
                     const m = await contract.piyasalar(i);
-                    if (!m[4]) { // m[4] = isFinished
+                    // Sadece bitmemiş piyasaları göster
+                    if (!m[4]) { 
                         html += `
                             <div class="market-card">
                                 <h3>${m[0]}</h3>
                                 <button class="btn btn-yes" onclick="makeBet(${i}, true)">EVET</button>
                                 <button class="btn btn-no" onclick="makeBet(${i}, false)">HAYIR</button>
-                                <div style="font-size: 0.8em; color: #999; margin-top:10px;">Gereken: 0.001 POL</div>
+                                <div class="status">Bahis: 0.001 POL</div>
                             </div>
                         `;
                     }
                 }
-                document.getElementById('markets').innerHTML = html || "Henüz açık bir piyasa yok.";
+                document.getElementById('markets').innerHTML = html || "Aktif piyasa bulunamadı.";
             } catch (e) {
                 console.error(e);
-                document.getElementById('markets').innerHTML = "Piyasalar yüklenemedi.";
+                document.getElementById('markets').innerHTML = "Piyasalar yüklenirken bir hata oluştu. MetaMask'ın Amoy ağında olduğundan emin ol.";
             }
         }
 
         async function makeBet(id, vote) {
             try {
-                // 0.0104 POL bakiyene göre ayarlı (0.001 bahis + gas)
-                const tx = await contract.bahisYap(id, vote, {
+                // Elindeki 0.010 POL'e göre ayarlandı
+                const tx = await contract.bahisYap(id, vote, { 
                     value: ethers.utils.parseEther("0.001"),
-                    gasLimit: 120000
+                    gasLimit: 100000 
                 });
-
-                tg.showConfirm("İşlem blockchain'e iletildi. Lütfen bekleyin...");
                 await tx.wait();
-                tg.showAlert("Başarılı! Tahmininiz kaydedildi.");
+                tg.showAlert("Bahis Başarılı!");
                 loadMarkets();
             } catch (e) {
-                console.error(e);
-                alert("İşlem gerçekleşmedi: " + (e.data?.message || e.message));
+                alert("Hata: " + (e.data?.message || e.message));
             }
         }
+
+        // Sayfa yüklenir yüklenmez başlat
+        window.onload = init;
     </script>
 </body>
 </html>
-
