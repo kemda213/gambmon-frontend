@@ -8,19 +8,19 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <style>
         body { font-family: -apple-system, sans-serif; background: #f4f4f9; padding: 15px; color: #333; }
-        .card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-left: 5px solid #2481cc; }
-        .title { font-weight: bold; font-size: 1.1em; margin-bottom: 10px; color: #2c3e50; }
+        .card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-left: 5px solid #2481cc; position: relative; }
+        .title { font-weight: bold; font-size: 1.1em; margin-bottom: 10px; color: #2c3e50; padding-right: 50px; }
         .stats { font-size: 0.85em; color: #666; margin-bottom: 12px; display: flex; justify-content: space-between; background: #f9f9f9; padding: 8px; border-radius: 6px; }
         .btn-group { display: flex; gap: 8px; }
-        button { flex: 1; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: active 0.1s; }
-        button:active { transform: scale(0.98); }
+        button { flex: 1; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: background 0.2s; }
+        button:active { opacity: 0.8; }
         .yes { background: #27ae60; color: white; }
         .no { background: #e74c3c; color: white; }
         .claim { background: #f39c12; color: white; width: 100%; margin-top: 5px; }
-        #connectBtn { background: #2481cc; color: white; width: 100%; margin-bottom: 20px; font-size: 1em; height: 45px; }
+        #connectBtn { background: #2481cc; color: white; width: 100%; margin-bottom: 20px; font-size: 1em; height: 50px; display: block; }
         #walletInfo { text-align: center; font-size: 0.8em; margin-bottom: 10px; color: #2481cc; font-weight: bold; word-break: break-all; }
         .loading { text-align: center; color: #999; margin-top: 20px; }
-        .status-tag { font-size: 0.7em; padding: 3px 8px; border-radius: 4px; float: right; }
+        .status-tag { font-size: 0.65em; padding: 2px 6px; border-radius: 4px; position: absolute; top: 15px; right: 15px; }
         .open { background: #d4edda; color: #155724; }
         .closed { background: #f8d7da; color: #721c24; }
     </style>
@@ -31,7 +31,7 @@
     <button id="connectBtn" onclick="connectWallet()">🦊 Cüzdan Bağla</button>
 
     <div id="market-container">
-        <p class="loading">Piyasaları görmek için lütfen cüzdanınızı bağlayın.</p>
+        <p class="loading">Piyasaları görmek için cüzdanınızı bağlayın.</p>
     </div>
 
     <script>
@@ -40,51 +40,58 @@
 
         const contractAddress = "0xB58f40e78f65D712c173F969A402E4Fd467D3b48";
         const contractABI = [
-            {"inputs": [{"internalType": "uint256","name": "_marketId","type": "uint256"},{"internalType": "bool","name": "_tahmin","type": "bool"}],"name": "bahisYap","outputs": [],"stateMutability": "payable","type": "function"},
-            {"inputs": [{"internalType": "uint256","name": "_marketId","type": "uint256"}],"name": "kazancCek","outputs": [],"stateMutability": "nonpayable","type": "function"},
-            {"inputs": [{"internalType": "string","name": "_soru","type": "string"},{"internalType": "uint256","name": "_sureSaniye","type": "uint256"}],"name": "piyasaOlustur","outputs": [],"stateMutability": "nonpayable","type": "function"},
-            {"inputs": [{"internalType": "uint256","name": "_marketId","type": "uint256"},{"internalType": "bool","name": "_kazananSonuc","type": "bool"}],"name": "piyasayiBitir","outputs": [],"stateMutability": "nonpayable","type": "function"},
-            {"inputs": [],"stateMutability": "view","name": "marketSayisi","outputs": [{"internalType": "uint256","name": "","type": "uint256"}]},
-            {"inputs": [{"internalType": "uint256","name": "","type": "uint256"}],"name": "marketler","outputs": [{"internalType": "uint256","name": "id","type": "uint256"},{"internalType": "string","name": "soru","type": "string"},{"internalType": "uint256","name": "bitisZamani","type": "uint256"},{"internalType": "uint256","name": "evetBakiye","type": "uint256"},{"internalType": "uint256","name": "hayirBakiye","type": "uint256"},{"internalType": "bool","name": "sonuclandi","type": "bool"},{"internalType": "bool","name": "sonuc","type": "bool"}],"stateMutability": "view","type": "function"}
+            {"inputs":[{"internalType":"uint256","name":"_marketId","type":"uint256"},{"internalType":"bool","name":"_tahmin","type":"bool"}],"name":"bahisYap","outputs":[],"stateMutability":"payable","type":"function"},
+            {"inputs":[{"internalType":"uint256","name":"_marketId","type":"uint256"}],"name":"kazancCek","outputs":[],"stateMutability":"nonpayable","type":"function"},
+            {"inputs":[{"internalType":"string","name":"_soru","type":"string"},{"internalType":"uint256","name":"_sureSaniye","type":"uint256"}],"name":"piyasaOlustur","outputs":[],"stateMutability":"nonpayable","type":"function"},
+            {"inputs":[{"internalType":"uint256","name":"_marketId","type":"uint256"},{"internalType": "bool","name": "_kazananSonuc","type": "bool"}],"name": "piyasayiBitir","outputs": [],"stateMutability": "nonpayable","type": "function"},
+            {"inputs":[],"name":"marketSayisi","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+            {"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"marketler","outputs":[{"internalType":"uint256","name":"id","type":"uint256"},{"internalType":"string","name":"soru","type":"string"},{"internalType":"uint256","name":"bitisZamani","type":"uint256"},{"internalType":"uint256","name":"evetBakiye","type":"uint256"},{"internalType":"uint256","name":"hayirBakiye","type":"uint256"},{"internalType":"bool","name":"sonuclandi","type":"bool"},{"internalType":"bool","name":"sonuc","type":"bool"}],"stateMutability":"view","type":"function"}
         ];
 
         let provider, signer, contract;
 
         async function connectWallet() {
-            if (window.ethereum) {
+            console.log("Bağlan butonuna basıldı...");
+            if (typeof window.ethereum !== 'undefined') {
                 try {
+                    // Cüzdan bağlama isteği
+                    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    const address = accounts[0];
+                    console.log("Bağlı Adres:", address);
+
                     provider = new ethers.providers.Web3Provider(window.ethereum);
-                    await provider.send("eth_requestAccounts", []);
                     signer = provider.getSigner();
-                    const address = await signer.getAddress();
                     contract = new ethers.Contract(contractAddress, contractABI, signer);
 
+                    // Arayüzü güncelle
                     document.getElementById('connectBtn').style.display = "none";
-                    document.getElementById('walletInfo').innerText = "Bağlı: " + address;
+                    document.getElementById('walletInfo').innerText = "Cüzdan: " + address.substring(0,6) + "..." + address.substring(38);
 
+                    // Piyasaları yükle
                     loadMarkets();
-                } catch (e) {
-                    tg.showAlert("Bağlantı hatası!");
+                } catch (error) {
+                    console.error("Bağlantı Hatası:", error);
+                    alert("Cüzdan bağlantısı reddedildi.");
                 }
             } else {
-                tg.showAlert("Lütfen bir Web3 tarayıcı kullanın.");
+                alert("Lütfen MetaMask yüklü bir tarayıcıdan veya Trust Wallet içinden açın.");
             }
         }
 
         async function loadMarkets() {
             const container = document.getElementById('market-container');
-            container.innerHTML = "<p class='loading'>Veriler çekiliyor...</p>";
+            container.innerHTML = "<p class='loading'>Piyasalar yükleniyor...</p>";
 
             try {
-                const count = await contract.marketSayisi();
+                const countHex = await contract.marketSayisi();
+                const count = parseInt(countHex.toString());
                 container.innerHTML = "";
 
-                if (count == 0) {
+                if (count === 0) {
                     container.innerHTML = "<p class='loading'>Henüz aktif piyasa yok.</p>";
                     return;
                 }
 
-                // Ters döngü: En yeni piyasa en üstte görünsün
                 for (let i = count - 1; i >= 0; i--) {
                     const m = await contract.marketler(i);
                     
@@ -114,26 +121,28 @@
                     `;
                 }
             } catch (e) {
-                container.innerHTML = "Hata: " + e.message;
+                console.error("Yükleme hatası:", e);
+                container.innerHTML = "<p style='color:red;'>Veriler çekilemedi. Sayfayı yenileyin.</p>";
             }
         }
 
         async function makeBet(id, vote) {
             try {
                 const tx = await contract.bahisYap(id, vote, { value: ethers.utils.parseEther("0.1") });
+                tg.showAlert("İşlem gönderildi, bekleyin...");
                 await tx.wait();
-                tg.showAlert("Bahis alındı!");
+                tg.showAlert("Bahis Başarılı!");
                 loadMarkets();
-            } catch (e) { tg.showAlert("Hata!"); }
+            } catch (e) { alert("Hata: " + e.message); }
         }
 
         async function claimReward(id) {
             try {
                 const tx = await contract.kazancCek(id);
                 await tx.wait();
-                tg.showAlert("Kazanç çekildi!");
+                tg.showAlert("Kazanç cüzdanınıza gönderildi!");
                 loadMarkets();
-            } catch (e) { tg.showAlert("Çekilecek bakiye yok!"); }
+            } catch (e) { alert("Bakiye bulunamadı!"); }
         }
     </script>
 </body>
