@@ -3,91 +3,120 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tahmin Pazarı Pro</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <title>Gambdom - Tahmin Pazarı</title>
+    <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js" type="application/javascript"></script>
     <style>
-        body { font-family: sans-serif; background: #f3f4f6; padding: 20px; text-align: center; color: #333; }
-        .container { max-width: 400px; margin: 0 auto; }
-        .card { background: white; border-radius: 15px; padding: 20px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .btn { padding: 12px 20px; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; width: 45%; margin: 5px; }
-        .btn-yes { background: #10b981; color: white; }
-        .btn-no { background: #ef4444; color: white; }
-        .btn-main { background: #3b82f6; color: white; width: 100%; margin-top: 20px; }
-        #status { font-size: 0.8rem; margin-bottom: 20px; color: #666; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #1a1a1a; color: white; text-align: center; padding: 20px; }
+        .container { max-width: 600px; margin: auto; }
+        .card { background: #2d2d2d; border-radius: 15px; padding: 20px; margin: 15px 0; border: 1px solid #444; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .btn { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin: 5px; transition: 0.3s; }
+        .btn-connect { background-color: #f39c12; color: white; font-size: 1.1em; }
+        .btn-yes { background-color: #27ae60; color: white; width: 40%; }
+        .btn-no { background-color: #c0392b; color: white; width: 40%; }
+        .btn:hover { opacity: 0.8; transform: scale(1.05); }
+        .stats { font-size: 0.9em; color: #aaa; margin-top: 10px; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2>🏆 Tahmin Pazarı</h2>
-        <div id="status">Cüzdan bekleniyor...</div>
-        
-        <div id="market-list">
-            <button class="btn btn-main" onclick="connect()">Cüzdanı Bağla ve Yükle</button>
-        </div>
+
+<div class="container">
+    <h1>🎲 GAMBDOM</h1>
+    <button id="connectBtn" class="btn btn-connect" onclick="connectWallet()">Cüzdanı Bağla</button>
+    
+    <div id="status" style="margin-top: 10px; color: #27ae60;"></div>
+    <hr style="border: 0.5px solid #444; margin: 20px 0;">
+
+    <div id="market-list">
+        <p>Lütfen cüzdanınızı bağlayın...</p>
     </div>
+</div>
 
-    <script>
-        const contractAddress = "0x3bF8f905308F8760bfEAAC9256d814AdF790FE89";
-        const abi = [
-            "function piyasalar(uint256) view returns (string, uint256, uint256, bool)",
-            "function piyasaSayisi() view returns (uint256)",
-            "function bahisYap(uint256 _id, bool _secim) payable"
-        ];
+<script>
+    // --- AYARLAR ---
+    const contractAddress = "0x3bF8f905308F8760bfEAAC9256d814AdF790FE89"; 
+    const abi = [
+        "function piyasalar(uint256) view returns (string soru, uint256 evetOyu, uint256 hayirOyu, bool bitti)",
+        "function piyasaSayisi() view returns (uint256)",
+        "function bahisYap(uint256 _id, bool _secim) payable"
+    ];
 
-        let signer, contract;
+    let provider, signer, contract;
 
-        async function connect() {
-            if (!window.ethereum) return alert("MetaMask bulunamadı!");
-            
-            const provider = new ethers.providers.Web3Provider(window.ethereum);
-            await provider.send("eth_requestAccounts", []);
-            signer = provider.getSigner();
-            contract = new ethers.Contract(contractAddress, abi, signer);
-            
-            document.getElementById('status').innerText = "Bağlandı: " + await signer.getAddress();
-            loadMarkets();
-        }
-
-        async function loadMarkets() {
-            const list = document.getElementById('market-list');
-            list.innerHTML = "Piyasalar yükleniyor...";
-            
+    async function connectWallet() {
+        if (typeof window.ethereum !== 'undefined') {
             try {
-                const count = await contract.piyasaSayisi();
-                let html = "";
-                for(let i=0; i<count; i++) {
-                    const m = await contract.piyasalar(i);
-                    if(!m[3]) { // bitti değilse
-                        html += `
-                            <div class="card">
-                                <strong>${m[0]}</strong><br><br>
-                                <button class="btn btn-yes" onclick="bet(${i}, true)">EVET</button>
-                                <button class="btn btn-no" onclick="bet(${i}, false)">HAYIR</button>
-                            </div>`;
-                    }
-                }
-                list.innerHTML = html || "Henüz açık piyasa yok. Bot üzerinden açın!";
-            } catch (e) {
-                list.innerHTML = "Hata: " + e.message;
+                await window.ethereum.request({ method: 'eth_requestAccounts' });
+                provider = new ethers.providers.Web3Provider(window.ethereum);
+                signer = provider.getSigner();
+                contract = new ethers.Contract(contractAddress, abi, signer);
+                
+                const address = await signer.getAddress();
+                document.getElementById('connectBtn').innerText = "Bağlandı: " + address.substring(0,6) + "...";
+                document.getElementById('status').innerText = "Bağlantı Başarılı!";
+                
+                loadMarkets();
+            } catch (error) {
+                console.error("Bağlantı hatası:", error);
             }
+        } else {
+            alert("Lütfen MetaMask yükleyin!");
         }
+    }
 
-        async function bet(id, side) {
-            try {
-                const tx = await contract.bahisYap(id, side, {
-                    value: ethers.utils.parseEther("0.001"),
-                    gasLimit: 100000
-                });
-                alert("İşlem gönderildi, onay bekleniyor...");
-                await tx.wait();
-                alert("Başarılı!");
-            } catch (e) {
-                alert("Hata: " + e.message);
+    async function loadMarkets() {
+        const list = document.getElementById('market-list');
+        list.innerHTML = "Piyasalar yükleniyor...";
+        
+        try {
+            const count = await contract.piyasaSayisi();
+            list.innerHTML = "";
+
+            if (count == 0) {
+                list.innerHTML = "Henüz aktif bir piyasa yok.";
+                return;
             }
+
+            for (let i = 0; i < count; i++) {
+                const m = await contract.piyasalar(i);
+                
+                // Wei'den Ether'e (POL) çeviriyoruz
+                const yesVotes = ethers.utils.formatEther(m.evetOyu);
+                const noVotes = ethers.utils.formatEther(m.hayirOyu);
+
+                list.innerHTML += `
+                    <div class="card">
+                        <h3>${m.soru}</h3>
+                        <button class="btn btn-yes" onclick="bet(${i}, true)">EVET</button>
+                        <button class="btn btn-no" onclick="bet(${i}, false)">HAYIR</button>
+                        <div class="stats">
+                            Evet: ${yesVotes} POL | Hayır: ${noVotes} POL
+                        </div>
+                    </div>`;
+            }
+        } catch (error) {
+            console.error("Yükleme hatası:", error);
+            list.innerHTML = "Veriler çekilemedi!";
         }
-    </script>
+    }
+
+    async function bet(id, choice) {
+        try {
+            // Her bahis için standart 0.01 POL gönderiyoruz
+            const tx = await contract.bahisYap(id, choice, {
+                value: ethers.utils.parseEther("0.01")
+            });
+            
+            document.getElementById('status').innerText = "İşlem gönderildi, onay bekleniyor...";
+            await tx.wait();
+            document.getElementById('status').innerText = "Bahis Başarılı!";
+            
+            loadMarkets(); // Listeyi güncelle
+        } catch (error) {
+            console.error("Bahis hatası:", error);
+            alert("Bahis yapılamadı. Bakiyenizi kontrol edin.");
+        }
+    }
+</script>
+
 </body>
 </html>
-
-
