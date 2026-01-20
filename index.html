@@ -2,148 +2,100 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PolyClone App</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tahmin Pazarı</title>
+    <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <style>
-        body { font-family: -apple-system, sans-serif; background: #f4f4f9; padding: 15px; color: #333; }
-        .card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-left: 5px solid #2481cc; position: relative; }
-        .title { font-weight: bold; font-size: 1.1em; margin-bottom: 10px; color: #2c3e50; padding-right: 60px; }
-        .stats { font-size: 0.85em; color: #666; margin-bottom: 12px; display: flex; justify-content: space-between; background: #f9f9f9; padding: 8px; border-radius: 6px; }
-        .btn-group { display: flex; gap: 8px; }
-        button { flex: 1; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: opacity 0.2s; }
-        button:active { opacity: 0.7; }
-        .yes { background: #27ae60; color: white; }
-        .no { background: #e74c3c; color: white; }
-        .claim { background: #f39c12; color: white; width: 100%; margin-top: 5px; }
-        #connectBtn { background: #2481cc; color: white; width: 100%; margin-bottom: 20px; font-size: 1em; height: 50px; display: block; }
-        #walletInfo { text-align: center; font-size: 0.8em; margin-bottom: 10px; color: #2481cc; font-weight: bold; word-break: break-all; }
-        .loading { text-align: center; color: #999; margin-top: 20px; }
-        .status-tag { font-size: 0.65em; padding: 4px 8px; border-radius: 4px; position: absolute; top: 12px; right: 12px; font-weight: bold; }
-        .open { background: #d4edda; color: #155724; }
-        .closed { background: #f8d7da; color: #721c24; }
+        body { font-family: sans-serif; background: #f4f4f9; padding: 20px; text-align: center; }
+        .market-card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .btn { padding: 10px 20px; margin: 5px; border: none; border-radius: 5px; cursor: pointer; color: white; font-weight: bold; }
+        .btn-yes { background: #28a745; }
+        .btn-no { background: #dc3545; }
+        .status { font-size: 0.8em; color: #666; margin-top: 10px; }
     </style>
 </head>
 <body>
-
-    <div id="walletInfo"></div>
-    <button id="connectBtn" onclick="connectWallet()">🦊 Cüzdan Bağla</button>
-
-    <div id="market-container">
-        <p class="loading">Lütfen cüzdanınızı bağlayarak Polygon Amoy ağına geçin.</p>
-    </div>
+    <h2>🏆 Tahmin Pazarı</h2>
+    <div id="wallet-address" class="status">Cüzdan bağlı değil</div>
+    <div id="markets">Piyasalar yükleniyor...</div>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        const contractAddress = "0xB58f40e78f65D712c173F969A402E4Fd467D3b48";
-        const contractABI = [
-            {"inputs":[{"internalType":"uint256","name":"_marketId","type":"uint256"},{"internalType":"bool","name":"_tahmin","type":"bool"}],"name":"bahisYap","outputs":[],"stateMutability":"payable","type":"function"},
-            {"inputs":[{"internalType":"uint256","name":"_marketId","type":"uint256"}],"name":"kazancCek","outputs":[],"stateMutability":"nonpayable","type":"function"},
-            {"inputs":[],"name":"marketSayisi","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-            {"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"marketler","outputs":[{"internalType":"uint256","name":"id","type":"uint256"},{"internalType":"string","name":"soru","type":"string"},{"internalType":"uint256","name":"bitisZamani","type":"uint256"},{"internalType":"uint256","name":"evetBakiye","type":"uint256"},{"internalType":"uint256","name":"hayirBakiye","type":"uint256"},{"internalType":"bool","name":"sonuclandi","type":"bool"},{"internalType":"bool","name":"sonuc","type":"bool"}],"stateMutability":"view","type":"function"}
+        // SENİN BİLGİLERİN
+        const contractAddress = "0x8929e710202167d60f4e38e6e58f0003080c98ec";
+        const abi = [
+            "function piyasalar(uint256) view returns (string, uint256, uint256, uint256, bool, bool)",
+            "function marketCount() view returns (uint256)",
+            "function bahisYap(uint256 _id, bool _vote) payable"
         ];
 
         let provider, signer, contract;
 
-        async function connectWallet() {
-            if (typeof window.ethereum !== 'undefined') {
-                try {
-                    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-                    provider = new ethers.providers.Web3Provider(window.ethereum);
-                    signer = provider.getSigner();
-                    contract = new ethers.Contract(contractAddress, contractABI, signer);
+        async function init() {
+            if (window.ethereum) {
+                provider = new ethers.providers.Web3Provider(window.ethereum);
+                await provider.send("eth_requestAccounts", []);
+                signer = provider.getSigner();
+                contract = new ethers.Contract(contractAddress, abi, signer);
 
-                    document.getElementById('connectBtn').style.display = "none";
-                    document.getElementById('walletInfo').innerText = "Adres: " + accounts[0].substring(0,6) + "..." + accounts[0].substring(38);
+                const address = await signer.getAddress();
+                document.getElementById('wallet-address').innerText = "Cüzdan: " + address.substring(0,6) + "..." + address.substring(38);
 
-                    loadMarkets();
-                } catch (error) {
-                    alert("Bağlantı Hatası: " + error.message);
-                }
+                loadMarkets();
             } else {
-                alert("MetaMask veya Web3 destekli bir tarayıcı gerekli!");
+                alert("Lütfen MetaMask yüklü bir tarayıcıdan girin.");
             }
         }
 
         async function loadMarkets() {
-            const container = document.getElementById('market-container');
-            container.innerHTML = "<p class='loading'>Piyasalar okunuyor...</p>";
-
             try {
-                const countBN = await contract.marketSayisi();
-                const count = countBN.toNumber();
-                container.innerHTML = "";
-
-                if (count === 0) {
-                    container.innerHTML = "<p class='loading'>Henüz aktif bir bahis yok.</p>";
-                    return;
-                }
-
-                // En son piyasayı en üstte göstermek için count-1'den başlatıyoruz
-                for (let i = count - 1; i >= 0; i--) {
-                    const m = await contract.marketler(i);
-
-                    let actionHtml = "";
-                    if (!m.sonuclandi) {
-                        actionHtml = `
-                            <div class="btn-group">
-                                <button class="yes" onclick="makeBet(${i}, true)">EVET</button>
-                                <button class="no" onclick="makeBet(${i}, false)">HAYIR</button>
-                            </div>`;
-                    } else {
-                        actionHtml = `<button class="claim" onclick="claimReward(${i})">💰 KAZANCI ÇEK</button>`;
-                    }
-
-                    container.innerHTML += `
-                        <div class="card">
-                            <span class="status-tag ${m.sonuclandi ? 'closed' : 'open'}">
-                                ${m.sonuclandi ? 'KAPANDI' : 'AÇIK'}
-                            </span>
-                            <div class="title">${m.soru}</div>
-                            <div class="stats">
-                                <span>Evet: <b>${ethers.utils.formatEther(m.evetBakiye)} MATIC</b></span>
-                                <span>Hayır: <b>${ethers.utils.formatEther(m.hayirBakiye)} MATIC</b></span>
+                const count = await contract.marketCount();
+                let html = "";
+                for (let i = 0; i < count; i++) {
+                    const m = await contract.piyasalar(i);
+                    // m[0]: Soru, m[4]: Bitti mi?, m[5]: Geçerli mi?
+                    if (!m[4]) { // Sadece bitmemiş piyasaları göster
+                        html += `
+                            <div class="market-card">
+                                <h3>${m[0]}</h3>
+                                <button class="btn btn-yes" onclick="makeBet(${i}, true)">EVET</button>
+                                <button class="btn btn-no" onclick="makeBet(${i}, false)">HAYIR</button>
+                                <div class="status">Bahis: 0.001 POL</div>
                             </div>
-                            ${actionHtml}
-                        </div>
-                    `;
+                        `;
+                    }
                 }
+                document.getElementById('markets').innerHTML = html || "Aktif piyasa bulunamadı.";
             } catch (e) {
                 console.error(e);
-                container.innerHTML = "<p style='color:red; text-align:center;'>Veri çekilemedi. Lütfen Amoy Testnet ağında olduğunuzdan emin olun.</p>";
+                document.getElementById('markets').innerHTML = "Piyasalar yüklenirken hata oluştu.";
             }
         }
 
         async function makeBet(id, vote) {
             try {
-                // RPC Hatasını önlemek için gaz limitini artırdık
+                // ELİNDEKİ 0.01 POL BAKİYESİNE GÖRE AYARLANDI
                 const tx = await contract.bahisYap(id, vote, {
-                    value: ethers.utils.parseEther("0.001"),
-                    gasLimit: 100000
+                    value: ethers.utils.parseEther("0.001"), // Sadece 0.001 POL harcar
+                    gasLimit: 100000 // Gaz ücretini sınırladık
                 });
-                tg.showConfirm("İşlem onay bekliyor...");
+
+                tg.showAlert("İşlem onay bekliyor, lütfen bekleyin...");
                 await tx.wait();
-                tg.showAlert("Bahis Başarıyla Alındı!");
+                tg.showAlert("Tebrikler! Bahis başarıyla yapıldı.");
                 loadMarkets();
             } catch (e) {
                 console.error(e);
-                alert("Hata: " + (e.reason || "Bakiye yetersiz veya süre doldu."));
+                // Detaylı hata mesajı
+                const errorMsg = e.data?.message || e.message;
+                alert("İşlem Başarısız: " + errorMsg);
             }
         }
 
-        async function claimReward(id) {
-            try {
-                const tx = await contract.kazancCek(id, { gasLimit: 200000 });
-                await tx.wait();
-                tg.showAlert("Ödeme cüzdanınıza yapıldı!");
-                loadMarkets();
-            } catch (e) {
-                alert("Çekilecek tutar yok veya işlem reddedildi.");
-            }
-        }
+        init();
     </script>
 </body>
 </html>
