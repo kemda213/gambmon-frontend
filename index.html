@@ -2,30 +2,65 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tahmin Pazarı</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tahmin Pazarı Pro</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { font-family: sans-serif; background: #f4f4f9; padding: 20px; text-align: center; }
-        .market-card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .btn { padding: 10px 20px; margin: 5px; border: none; border-radius: 5px; cursor: pointer; color: white; font-weight: bold; }
-        .btn-yes { background: #28a745; }
-        .btn-no { background: #dc3545; }
-        .status { font-size: 0.8em; color: #666; margin-top: 10px; }
+        :root { --bg: #f3f4f6; --card: #ffffff; --primary: #3b82f6; --text: #1f2937; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); padding: 15px; margin: 0; text-align: center; }
+        
+        .container { max-width: 480px; margin: 0 auto; }
+        
+        h2 { font-size: 1.5rem; margin-bottom: 20px; color: #111; }
+
+        /* Kart Tasarımı */
+        .market-card { background: var(--card); border-radius: 16px; padding: 20px; margin-bottom: 15px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); border: 1px solid #e5e7eb; text-align: left; }
+        .market-question { font-size: 1.1rem; font-weight: 600; margin-bottom: 15px; display: block; }
+        
+        /* Butonlar */
+        .btn-group { display: flex; gap: 10px; }
+        .btn { flex: 1; padding: 12px; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; transition: 0.2s; color: white; font-size: 0.95rem; }
+        .btn:active { transform: scale(0.97); }
+        .btn-yes { background: #10b981; } /* Yeşil */
+        .btn-no { background: #ef4444; } /* Kırmızı */
+        .btn-connect { background: #2563eb; width: 100%; padding: 15px; font-size: 1rem; margin-top: 20px; }
+
+        /* Durum ve Hata Alanları */
+        .status-badge { font-size: 0.8rem; background: #e0f2fe; color: #0369a1; padding: 5px 12px; border-radius: 20px; display: inline-block; margin-bottom: 20px; }
+        .price-tag { font-size: 0.8rem; color: #6b7280; margin-top: 10px; text-align: center; }
+        
+        /* Debug Kutusu (Hata Yakalamak İçin) */
+        #debug-log { 
+            margin-top: 30px; padding: 10px; background: #000; color: #0f0; 
+            font-family: monospace; font-size: 10px; text-align: left; 
+            border-radius: 8px; max-height: 150px; overflow-y: auto; display: none;
+        }
+        .loading { color: #666; font-style: italic; }
     </style>
 </head>
 <body>
-    <h2>🏆 Tahmin Pazarı</h2>
-    <div id="wallet-address" class="status">Cüzdan bağlanıyor...</div>
-    <div id="markets">Piyasalar yükleniyor...</div>
+
+    <div class="container">
+        <h2>🏆 Tahmin Pazarı</h2>
+        
+        <div id="status-area" class="status-badge">Bağlantı bekleniyor...</div>
+
+        <div id="markets-container">
+            <button class="btn btn-connect" onclick="initWallet()">🦊 Cüzdanı Bağla ve Yükle</button>
+        </div>
+
+        <div id="debug-log"></div>
+    </div>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // SENİN KONTRAKT ADRESİN
+        // --- DİKKAT: BURASI SENİN KONTRAT ADRESİN ---
+        // Eğer Remix'te yeni deploy ettiysen bu adresi mutlaka güncelle!
         const contractAddress = "0x8929e710202167d60f4e38e6e58f0003080c98ec";
+        
         const abi = [
             "function piyasalar(uint256) view returns (string, uint256, uint256, uint256, bool, bool)",
             "function marketCount() view returns (uint256)",
@@ -34,70 +69,134 @@
 
         let provider, signer, contract;
 
-        async function init() {
-            if (typeof window.ethereum !== 'undefined') {
-                try {
-                    // Sayfa açılır açılmaz cüzdanı tetikle (Eski usul)
-                    provider = new ethers.providers.Web3Provider(window.ethereum);
-                    await provider.send("eth_requestAccounts", []);
-                    signer = provider.getSigner();
-                    contract = new ethers.Contract(contractAddress, abi, signer);
-                    
-                    const address = await signer.getAddress();
-                    document.getElementById('wallet-address').innerText = "Cüzdan: " + address;
-                    
-                    loadMarkets();
-                } catch (e) {
-                    console.error(e);
-                    document.getElementById('markets').innerHTML = "Cüzdan bağlantısı reddedildi.";
+        function log(msg, isError = false) {
+            const debugEl = document.getElementById('debug-log');
+            debugEl.style.display = 'block';
+            debugEl.innerHTML += `<div style="color:${isError ? 'red' : '#0f0'}">> ${msg}</div>`;
+            console.log(msg);
+        }
+
+        async function initWallet() {
+            log("Başlatılıyor...");
+            
+            if (typeof window.ethereum === 'undefined') {
+                alert("MetaMask bulunamadı!");
+                return;
+            }
+
+            try {
+                provider = new ethers.providers.Web3Provider(window.ethereum);
+                
+                // 1. Cüzdan İzni İste
+                log("Cüzdan izni isteniyor...");
+                await provider.send("eth_requestAccounts", []);
+                
+                // 2. Ağı Kontrol Et ve Zorla Değiştir (Amoy: 80002 -> Hex: 0x13882)
+                const network = await provider.getNetwork();
+                log(`Mevcut Ağ ID: ${network.chainId}`);
+                
+                if (network.chainId !== 80002) {
+                    log("Yanlış ağ! Amoy ağına geçiş yapılıyor...");
+                    try {
+                        await window.ethereum.request({
+                            method: 'wallet_switchEthereumChain',
+                            params: [{ chainId: '0x13882' }], // 80002 in Hex
+                        });
+                        // Ağ değişince provider'ı yenile
+                        provider = new ethers.providers.Web3Provider(window.ethereum);
+                    } catch (switchError) {
+                        log("Ağ değiştirme reddedildi veya hata: " + switchError.message, true);
+                        alert("Lütfen MetaMask'tan Polygon Amoy ağını seçin!");
+                        return;
+                    }
                 }
-            } else {
-                alert("MetaMask yüklü değil!");
+
+                signer = provider.getSigner();
+                const address = await signer.getAddress();
+                
+                document.getElementById('status-area').innerText = `Bağlı: ${address.substring(0,6)}...${address.substring(38)}`;
+                log("Cüzdan bağlandı: " + address);
+
+                // 3. Kontratı Başlat
+                contract = new ethers.Contract(contractAddress, abi, signer);
+                loadMarkets();
+
+            } catch (error) {
+                log("BAĞLANTI HATASI: " + error.message, true);
+                alert("Bağlantı hatası oluştu. Loglara bakın.");
             }
         }
 
         async function loadMarkets() {
+            const container = document.getElementById('markets-container');
+            container.innerHTML = '<p class="loading">Veriler Blockchain\'den çekiliyor...</p>';
+            
             try {
+                // Kontrat var mı kontrolü
+                log("Piyasalar çekiliyor...");
                 const count = await contract.marketCount();
+                log(`Toplam Piyasa Sayısı: ${count}`);
+
                 let html = "";
+                let activeCount = 0;
+
                 for (let i = 0; i < count; i++) {
                     const m = await contract.piyasalar(i);
-                    // Sadece bitmemiş piyasaları göster
+                    // m[0]: Soru, m[4]: Bitti mi?
                     if (!m[4]) { 
+                        activeCount++;
                         html += `
                             <div class="market-card">
-                                <h3>${m[0]}</h3>
-                                <button class="btn btn-yes" onclick="makeBet(${i}, true)">EVET</button>
-                                <button class="btn btn-no" onclick="makeBet(${i}, false)">HAYIR</button>
-                                <div class="status">Bahis: 0.001 POL</div>
+                                <span class="market-question">${m[0]}</span>
+                                <div class="btn-group">
+                                    <button class="btn btn-yes" onclick="makeBet(${i}, true)">EVET</button>
+                                    <button class="btn btn-no" onclick="makeBet(${i}, false)">HAYIR</button>
+                                </div>
+                                <div class="price-tag">İşlem Ücreti: ~0.001 POL</div>
                             </div>
                         `;
                     }
                 }
-                document.getElementById('markets').innerHTML = html || "Aktif piyasa bulunamadı.";
-            } catch (e) {
-                console.error(e);
-                document.getElementById('markets').innerHTML = "Piyasalar yüklenirken bir hata oluştu. MetaMask'ın Amoy ağında olduğundan emin ol.";
+
+                if (activeCount === 0) {
+                    container.innerHTML = "<p>Şu an açık piyasa yok. Bot ile oluşturun.</p>";
+                    log("Açık piyasa bulunamadı.");
+                } else {
+                    container.innerHTML = html;
+                    log("Piyasalar başarıyla yüklendi.");
+                }
+
+            } catch (error) {
+                log("VERİ ÇEKME HATASI: " + error.message, true);
+                container.innerHTML = `<p style="color:red">Hata oluştu!<br>Alttaki siyah kutuya bakın.</p>`;
             }
         }
 
         async function makeBet(id, vote) {
             try {
-                // Elindeki 0.010 POL'e göre ayarlandı
+                log(`Bahis yapılıyor ID: ${id} Seçim: ${vote}`);
+                
+                // Bakiye ve Limit Ayarı (0.010 POL için optimize)
                 const tx = await contract.bahisYap(id, vote, { 
                     value: ethers.utils.parseEther("0.001"),
-                    gasLimit: 100000 
+                    gasLimit: 150000 
                 });
+                
+                tg.showAlert("İşlem gönderildi! Lütfen bekleyin...");
+                log("Tx Hash: " + tx.hash);
+                
                 await tx.wait();
-                tg.showAlert("Bahis Başarılı!");
-                loadMarkets();
-            } catch (e) {
-                alert("Hata: " + (e.data?.message || e.message));
+                tg.showAlert("BAŞARILI! Bahis onaylandı.");
+                loadMarkets(); // Listeyi yenile
+                
+            } catch (error) {
+                log("BAHİS HATASI: " + (error.data?.message || error.message), true);
+                alert("İşlem başarısız. Siyah log kutusuna bakın.");
             }
         }
-
-        // Sayfa yüklenir yüklenmez başlat
-        window.onload = init;
+        
+        // Sayfa yüklenince otomatik bağlamayı dene (İsteğe bağlı)
+        // window.onload = initWallet; 
     </script>
 </body>
 </html>
