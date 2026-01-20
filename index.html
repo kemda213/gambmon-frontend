@@ -7,56 +7,97 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <style>
-        body { font-family: -apple-system, sans-serif; background: #f4f4f9; padding: 15px; }
-        .card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        .title { font-weight: bold; margin-bottom: 10px; }
+        body { font-family: -apple-system, sans-serif; background: #f4f4f9; padding: 15px; color: #333; }
+        .card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-left: 5px solid #2481cc; }
+        .title { font-weight: bold; font-size: 1.1em; margin-bottom: 10px; color: #2c3e50; }
+        .stats { font-size: 0.9em; color: #666; margin-bottom: 12px; display: flex; justify-content: space-between; }
         .btn-group { display: flex; gap: 8px; }
-        button { flex: 1; padding: 10px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        button { flex: 1; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: opacity 0.2s; }
+        button:active { opacity: 0.7; }
         .yes { background: #27ae60; color: white; }
         .no { background: #e74c3c; color: white; }
-        #connectBtn { background: #2481cc; color: white; width: 100%; margin-bottom: 20px; }
+        #connectBtn { background: #2481cc; color: white; width: 100%; margin-bottom: 20px; font-size: 1em; }
+        #walletInfo { text-align: center; font-size: 0.8em; margin-bottom: 10px; color: #2481cc; font-weight: bold; }
     </style>
 </head>
 <body>
 
+    <div id="walletInfo"></div>
     <button id="connectBtn" onclick="connectWallet()">Cüzdan Bağla</button>
-    <div id="market-container">Piyasalar yükleniyor...</div>
+
+    <div id="market-container">
+        <p style="text-align:center;">Piyasaları görmek için cüzdan bağlayın.</p>
+    </div>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        const contractAddress = "REMIX_KONTART_ADRESI";
-        const contractABI = [...]; // Buraya ABI'yi yapıştır
+        const contractAddress = "0xB58f40e78f65D712c173F969A402E4Fd467D3b48";
+        const contractABI = [
+            {"inputs": [{"internalType": "uint256","name": "_marketId","type": "uint256"},{"internalType": "bool","name": "_tahmin","type": "bool"}],"name": "bahisYap","outputs": [],"stateMutability": "payable","type": "function"},
+            {"inputs": [{"internalType": "uint256","name": "_marketId","type": "uint256"}],"name": "kazancCek","outputs": [],"stateMutability": "nonpayable","type": "function"},
+            {"inputs": [{"internalType": "string","name": "_soru","type": "string"},{"internalType": "uint256","name": "_sureSaniye","type": "uint256"}],"name": "piyasaOlustur","outputs": [],"stateMutability": "nonpayable","type": "function"},
+            {"inputs": [{"internalType": "uint256","name": "_marketId","type": "uint256"},{"internalType": "bool","name": "_kazananSonuc","type": "bool"}],"name": "piyasayiBitir","outputs": [],"stateMutability": "nonpayable","type": "function"},
+            {"inputs": [],"stateMutability": "nonpayable","type": "constructor"},
+            {"inputs": [],"name": "admin","outputs": [{"internalType": "address","name": "","type": "address"}],"stateMutability": "view","type": "function"},
+            {"inputs": [{"internalType": "uint256","name": "","type": "uint256"},{"internalType": "address","name": "","type": "address"}],"name": "bahisler","outputs": [{"internalType": "uint256","name": "miktar","type": "uint256"},{"internalType": "bool","name": "tahmin","type": "bool"},{"internalType": "bool","name": "odendi","type": "bool"}],"stateMutability": "view","type": "function"},
+            {"inputs": [{"internalType": "uint256","name": "","type": "uint256"}],"name": "marketler","outputs": [{"internalType": "uint256","name": "id","type": "uint256"},{"internalType": "string","name": "soru","type": "string"},{"internalType": "uint256","name": "bitisZamani","type": "uint256"},{"internalType": "uint256","name": "evetBakiye","type": "uint256"},{"internalType": "uint256","name": "hayirBakiye","type": "uint256"},{"internalType": "bool","name": "sonuclandi","type": "bool"},{"internalType": "bool","name": "sonuc","type": "bool"}],"stateMutability": "view","type": "function"},
+            {"inputs": [],"name": "marketSayisi","outputs": [{"internalType": "uint256","name": "","type": "uint256"}],"stateMutability": "view","type": "function"}
+        ];
 
         let provider, signer, contract;
 
         async function connectWallet() {
             if (window.ethereum) {
-                provider = new ethers.providers.Web3Provider(window.ethereum);
-                await provider.send("eth_requestAccounts", []);
-                signer = provider.getSigner();
-                contract = new ethers.Contract(contractAddress, contractABI, signer);
-                document.getElementById('connectBtn').innerText = "Bağlandı";
-                loadMarkets();
+                try {
+                    provider = new ethers.providers.Web3Provider(window.ethereum);
+                    await provider.send("eth_requestAccounts", []);
+                    signer = provider.getSigner();
+                    const address = await signer.getAddress();
+
+                    contract = new ethers.Contract(contractAddress, contractABI, signer);
+
+                    document.getElementById('connectBtn').style.display = "none";
+                    document.getElementById('walletInfo').innerText = "Cüzdan: " + address.substring(0,6) + "..." + address.substring(38);
+
+                    loadMarkets();
+                } catch (e) {
+                    tg.showAlert("Bağlantı reddedildi.");
+                }
             } else {
-                tg.showAlert("Lütfen Metamask tarayıcısından açın.");
+                tg.showAlert("Lütfen Metamask (veya Web3 tarayıcı) kullanın.");
             }
         }
 
         async function loadMarkets() {
             const container = document.getElementById('market-container');
-            container.innerHTML = "";
+            container.innerHTML = "<p style='text-align:center;'>Piyasalar okunuyor...</p>";
 
             try {
                 const count = await contract.marketSayisi();
-                for (let i = 1; i <= count; i++) {
+                container.innerHTML = "";
+
+                if (count == 0) {
+                    container.innerHTML = "<p style='text-align:center;'>Henüz piyasa oluşturulmadı.</p>";
+                    return;
+                }
+
+                // Döngü 0'dan başlar (Solidity array kuralı)
+                for (let i = 0; i < count; i++) {
                     const m = await contract.marketler(i);
                     if (m.sonuclandi) continue;
+
+                    const evet = ethers.utils.formatEther(m.evetBakiye);
+                    const hayir = ethers.utils.formatEther(m.hayirBakiye);
 
                     container.innerHTML += `
                         <div class="card">
                             <div class="title">${m.soru}</div>
+                            <div class="stats">
+                                <span>✅ Evet: <b>${evet} MATIC</b></span>
+                                <span>❌ Hayır: <b>${hayir} MATIC</b></span>
+                            </div>
                             <div class="btn-group">
                                 <button class="yes" onclick="makeBet(${i}, true)">EVET</button>
                                 <button class="no" onclick="makeBet(${i}, false)">HAYIR</button>
@@ -65,19 +106,26 @@
                     `;
                 }
             } catch (e) {
-                container.innerText = "Hata: " + e.message;
+                container.innerText = "Yükleme Hatası: " + e.message;
             }
         }
 
         async function makeBet(id, vote) {
             if (!contract) return tg.showAlert("Önce cüzdan bağla!");
+
+            const miktar = "0.1"; // Standart bahis miktarı (İstersen prompt ile değiştirebilirsin)
+
             try {
-                const tx = await contract.bahisYap(id, vote, { value: ethers.utils.parseEther("0.01") });
-                tg.showConfirm("İşlem gönderildi, onay bekleniyor...");
+                const tx = await contract.bahisYap(id, vote, {
+                    value: ethers.utils.parseEther(miktar)
+                });
+
+                tg.showConfirm("İşlem blokzincirine gönderildi. Bekleyiniz...");
                 await tx.wait();
-                tg.showAlert("Bahis Başarılı!");
+                tg.showAlert("Tebrikler! Bahis alındı.");
+                loadMarkets(); // Listeyi güncelle
             } catch (e) {
-                tg.showAlert("Hata: " + e.message);
+                tg.showAlert("İşlem başarısız veya reddedildi.");
             }
         }
     </script>
