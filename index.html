@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gambmon | Ready to Play</title>
+    <title>Gambmon | Liquid Market</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&display=swap" rel="stylesheet">
@@ -13,21 +13,21 @@
     <style>
         body {
             background: #020408; color: white; font-family: 'Plus Jakarta Sans', sans-serif;
-            background-image: radial-gradient(circle at 15% 15%, #0d1a35, transparent 50%);
+            background-image: radial-gradient(circle at 10% 10%, #0d1a35, transparent 50%);
             min-height: 100vh; margin: 0;
         }
         .liquid-card {
             background: rgba(255, 255, 255, 0.02);
-            backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 28px;
+            backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 32px;
         }
-        /* Thirdweb butonunu sitemize uydurma */
+        /* Connect Button Tasarımı */
         thirdweb-connect-button::part(connect-button) {
             background: #2563eb !important;
-            color: white !important;
-            border-radius: 14px !important;
+            border-radius: 16px !important;
             font-weight: 800 !important;
-            padding: 10px 24px !important;
+            padding: 12px 28px !important;
+            box-shadow: 0 10px 20px rgba(37, 99, 235, 0.2) !important;
         }
     </style>
 </head>
@@ -40,20 +40,35 @@
         </div>
         
         <thirdweb-connect-button 
-            client-id="BURAYA_CLIENT_ID_YAPIŞTIR" 
+            client-id="a91dc5f9489704aa3aff08b0566043b9" 
             theme="dark">
         </thirdweb-connect-button>
     </nav>
 
-    <main class="container mx-auto px-6 py-20 text-center">
-        <div class="liquid-card max-w-lg mx-auto p-12">
-            <h2 class="text-xs font-bold text-blue-500 uppercase tracking-[4px] mb-4">Market Verisi</h2>
-            <div class="text-6xl font-black mb-2">7.22 <span class="text-2xl text-slate-500">POL</span></div>
-            <p class="text-slate-400 mt-6 italic">Giriş yaptıktan sonra kontrat işlemleri aktifleşecektir.</p>
+    <main class="container mx-auto px-6 py-20">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
             
-            <div class="mt-8 pt-8 border-t border-white/5 text-[10px] font-mono text-slate-600 break-all uppercase tracking-widest">
-                a91dc5f9489704aa3aff08b0566043b9
+            <div>
+                <h2 class="text-6xl font-black italic uppercase mb-6 leading-tight">Tahmin Et,<br><span class="text-blue-500">Kazan.</span></h2>
+                <div class="liquid-card p-8 inline-block">
+                    <p class="text-slate-500 font-bold uppercase tracking-widest text-xs mb-2">Havuzdaki Toplam Miktar</p>
+                    <div class="text-5xl font-black">7.22 <span class="text-2xl text-blue-500">POL</span></div>
+                </div>
             </div>
+
+            <div class="liquid-card p-10 relative overflow-hidden">
+                <div class="flex items-center gap-2 mb-6">
+                    <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                    <span class="text-green-500 text-xs font-bold uppercase tracking-widest">Canlı Pazar</span>
+                </div>
+                <h3 class="text-2xl font-bold italic mb-10 leading-snug">MarketplaceV3 Kontratı Üzerinden İlk Tahmininizi Yapın</h3>
+                
+                <div class="flex flex-col gap-4">
+                    <button class="w-full py-5 rounded-2xl bg-white/5 border border-white/10 font-black text-xl hover:bg-white/10 transition">Piyasaları Görüntüle</button>
+                    <p class="text-[10px] text-slate-600 text-center font-mono">Contract: 0x47E00Da00C16Ef1E12cb5703513a0433E718449A</p>
+                </div>
+            </div>
+
         </div>
     </main>
 
