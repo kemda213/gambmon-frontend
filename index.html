@@ -3,122 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gambmon | Liquid Glass Pro</title>
+    <title>Gambmon | Liquid Login</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&display=swap" rel="stylesheet">
     
-    <script src="https://unpkg.com/@thirdweb-dev/web-components@latest/dist/index.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@thirdweb-dev/sdk@latest/dist/thirdweb-sdk.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
 
     <style>
         body {
-            background-color: #020408;
-            color: #ffffff;
-            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: #020408; color: white; font-family: 'Plus Jakarta Sans', sans-serif;
             background-image: radial-gradient(circle at top left, #0d1a35, transparent);
             min-height: 100vh;
         }
         .glass-card {
             background: rgba(255, 255, 255, 0.02);
-            backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 24px;
-            transition: all 0.3s ease;
+            backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 24px; padding: 2rem;
         }
-        /* Thirdweb Butonunu Şıklaştıralım */
-        thirdweb-connect-button::part(connect-button) {
-            background: linear-gradient(135deg, #2563eb, #1d4ed8);
-            color: white; border-radius: 14px; font-weight: 700;
-            padding: 12px 28px; border: none; cursor: pointer;
+        /* Custom Button Style */
+        #connect-btn {
+            background: #2563eb; color: white; padding: 12px 24px;
+            border-radius: 14px; font-weight: 800; transition: 0.3s;
         }
+        #connect-btn:hover { background: #1d4ed8; transform: translateY(-2px); }
     </style>
 </head>
 <body>
 
-    <nav class="flex justify-between items-center p-6 border-b border-white/5 backdrop-blur-md sticky top-0 z-50 bg-black/40">
+    <nav class="flex justify-between items-center p-6 border-b border-white/5 backdrop-blur-md sticky top-0 z-50">
         <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/40">
-                <i class="fa-solid fa-droplet text-white"></i>
+            <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
+                <span class="font-black">G</span>
             </div>
-            <span class="text-2xl font-black italic tracking-tighter uppercase">Gambmon</span>
+            <span class="text-2xl font-black tracking-tighter uppercase italic">Gambmon</span>
         </div>
 
-        <thirdweb-connect-button 
-            client-id="a91dc5f9489704aa3aff08b0566043b9" 
-            theme="dark">
-        </thirdweb-connect-button>
+        <div id="connect-wallet-container">
+            <button id="connect-btn" onclick="connectWallet()">BAĞLAN</button>
+        </div>
     </nav>
 
-    <div class="overflow-x-auto py-4 border-b border-white/5 bg-black/20">
-        <div class="container mx-auto px-6 flex gap-6 text-[11px] font-bold uppercase tracking-widest text-slate-500">
-            <span class="text-blue-500">Trending</span>
-            <span>Politics</span>
-            <span>Crypto</span>
-            <span>Sports</span>
-            <span>Tech</span>
-            <span>World</span>
-        </div>
-    </div>
-
-    <main class="container mx-auto px-6 py-12">
-        <div id="market-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div class="col-span-full text-center py-20 opacity-50 italic">
-                Piyasaları görmek için lütfen cüzdan bağlayın...
-            </div>
+    <main class="container mx-auto px-6 py-20 text-center">
+        <div class="glass-card max-w-2xl mx-auto">
+            <h1 class="text-4xl font-black mb-4 italic uppercase">Hoş Geldiniz</h1>
+            <p class="text-slate-400 mb-8 font-medium">Google, MetaMask, Coinbase veya OKX ile saniyeler içinde piyasaya katılın.</p>
+            <div id="status" class="text-blue-400 font-bold text-sm uppercase tracking-widest">Giriş Bekleniyor...</div>
         </div>
     </main>
 
     <script>
-        const CONTRACT_ADDRESS = "0xB58f40e78f65D712c173F969A402E4Fd467D3b48";
-        const ABI = [
-            "function piyasalar(uint256) view returns (string soru, uint256 evetToplam, uint256 hayirToplam, bool bitti, int8 kazanan)",
-            "function piyasaSayisi() view returns (uint256)",
-            "function bahisYap(uint256 _id, bool _secim) payable"
-        ];
-
-        async function loadMarkets() {
-            if (!window.ethereum) return;
-            const provider = new ethers.providers.Web3Provider(window.ethereum);
-            const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
-            const grid = document.getElementById('market-grid');
-            
+        // --- AYARLAR ---
+        const CLIENT_ID = "a91dc5f9489704aa3aff08b0566043b9"; // <--- BURAYA KENDİ ID'Nİ YAPIŞTIR
+        
+        // Thirdweb Başlatma
+        async function connectWallet() {
             try {
-                const count = await contract.piyasaSayisi();
-                grid.innerHTML = "";
-                for (let i = 0; i < count; i++) {
-                    const m = await contract.piyasalar(i);
-                    grid.innerHTML += `
-                        <div class="glass-card p-8 h-[320px] flex flex-col justify-between">
-                            <h3 class="text-xl font-bold italic">${m.soru}</h3>
-                            <div class="grid grid-cols-2 gap-4">
-                                <button onclick="bet(${i}, true)" class="bg-green-500/10 text-green-400 py-4 rounded-2xl font-black border border-green-500/20 hover:bg-green-600 hover:text-white transition">EVET</button>
-                                <button onclick="bet(${i}, false)" class="bg-red-500/10 text-red-400 py-4 rounded-2xl font-black border border-red-500/20 hover:bg-red-600 hover:text-white transition">HAYIR</button>
-                            </div>
-                        </div>
-                    `;
+                // Eğer SDK yüklenmediyse bekle
+                if (typeof ThirdwebSDK === 'undefined') {
+                    alert("SDK henüz yüklenmedi, lütfen bir saniye bekleyip tekrar deneyin.");
+                    return;
                 }
-            } catch (err) { console.log("Yükleniyor..."); }
-        }
 
-        async function bet(id, choice) {
-            try {
-                const provider = new ethers.providers.Web3Provider(window.ethereum);
-                const signer = provider.getSigner();
-                const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
-                const amt = prompt("Bahis miktarı (POL):", "0.1");
-                if(!amt) return;
-                const tx = await contract.bahisYap(id, choice, { value: ethers.utils.parseEther(amt) });
-                await tx.wait();
-                alert("Başarılı!");
-                loadMarkets();
-            } catch (e) { alert("Hata!"); }
-        }
+                // Bu kısım Thirdweb'in "Modal" arayüzünü açar
+                // İçinde Google, Coinbase ve MetaMask otomatik gelir
+                const sdk = new window.ThirdwebSDK("polygon", { // Veya hangi ağdaysan (ethereum, sepolia vb.)
+                    clientId: CLIENT_ID
+                });
 
-        // Cüzdan bağlandığında verileri çek
-        window.addEventListener('load', loadMarkets);
-        setInterval(loadMarkets, 5000); 
+                // Kullanıcıyı bağlama işlemi
+                const walletAddress = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                
+                if(walletAddress[0]) {
+                    document.getElementById('connect-btn').innerText = "BAĞLANDI";
+                    document.getElementById('status').innerText = "Adres: " + walletAddress[0];
+                    alert("Başarıyla bağlandınız!");
+                }
+
+            } catch (error) {
+                console.error(error);
+                alert("Bağlantı sırasında bir hata oluştu. Lütfen Client ID'nizi kontrol edin.");
+            }
+        }
     </script>
 </body>
 </html>
