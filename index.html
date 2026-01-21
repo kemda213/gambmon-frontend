@@ -3,33 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gambmon | Liquid Pro Connect</title>
+    <title>Gambmon | Liquid Prediction</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&display=swap" rel="stylesheet">
-    
-    <script src="https://unpkg.com/@thirdweb-dev/web-components@latest/dist/index.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
         body {
             background: #020408; color: white; font-family: 'Plus Jakarta Sans', sans-serif;
             background-image: radial-gradient(circle at top left, #0d1a35, transparent);
-            min-height: 100vh; margin: 0;
+            min-height: 100vh;
         }
         .glass-card {
             background: rgba(255, 255, 255, 0.02);
             backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 28px; padding: 3rem; text-align: center;
+            border-radius: 28px;
         }
-        /* Butonun stilini sitemize uyduralım */
+        /* Thirdweb butonunu sitemize uyduralım */
         thirdweb-connect-button::part(connect-button) {
             background: #2563eb !important;
-            color: white !important;
-            border-radius: 16px !important;
+            border-radius: 14px !important;
             font-weight: 800 !important;
-            padding: 14px 32px !important;
-            text-transform: uppercase !important;
-            letter-spacing: 1px !important;
         }
     </style>
 </head>
@@ -38,32 +33,99 @@
     <nav class="flex justify-between items-center p-6 border-b border-white/5 backdrop-blur-md sticky top-0 z-50 bg-black/40">
         <div class="flex items-center gap-3">
             <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/40">
-                <span class="font-black text-xl italic">G</span>
+                <i class="fa-solid fa-droplet text-white"></i>
             </div>
             <span class="text-2xl font-black tracking-tighter uppercase italic">Gambmon</span>
         </div>
 
-        <thirdweb-connect-button 
-            client-id="a91dc5f9489704aa3aff08b0566043b9" 
-            theme="dark">
-        </thirdweb-connect-button>
+        <div id="connect-container">
+            <thirdweb-connect-button 
+                client-id="a91dc5f9489704aa3aff08b0566043b9"
+                theme="dark">
+            </thirdweb-connect-button>
+        </div>
     </nav>
 
-    <main class="container mx-auto px-6 pt-32">
-        <div class="glass-card max-w-xl mx-auto">
-            <div class="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-blue-500/20">
-                <i class="fa-solid fa-shield-halved text-blue-500 text-2xl"></i>
+    <main class="container mx-auto px-6 py-12">
+        <div class="mb-10 text-center md:text-left">
+            <h1 class="text-4xl font-black italic mb-2 tracking-tight uppercase">Piyasalar</h1>
+            <p class="text-slate-500 font-medium italic">Bağlanın ve geleceği tahmin edin.</p>
+        </div>
+
+        <div id="market-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div class="col-span-full glass-card p-20 text-center">
+                <i class="fa-solid fa-circle-notch fa-spin text-3xl mb-4 text-blue-500"></i>
+                <p class="text-slate-500 font-bold uppercase tracking-widest text-xs">Bağlantı Bekleniyor...</p>
             </div>
-            <h1 class="text-4xl font-black mb-4 italic uppercase tracking-tighter">Piyasaya Giriş Yap</h1>
-            <p class="text-slate-400 mb-8 leading-relaxed">
-                Gambmon'a hoş geldiniz. Google, OKX veya istediğiniz herhangi bir cüzdanla tek tıkla bağlanın.
-            </p>
-            
-            <p class="text-[10px] text-slate-600 uppercase font-bold tracking-[3px]">Secure Web3 Connection</p>
         </div>
     </main>
 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/@thirdweb-dev/web-components@latest/dist/index.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
 
+    <script>
+        // --- AYARLAR ---
+        const CONTRACT_ADDRESS = "0xB58f40e78f65D712c173F969A402E4Fd467D3b48"; 
+        const ABI = [
+            "function piyasalar(uint256) view returns (string soru, uint256 evetToplam, uint256 hayirToplam, bool bitti, int8 kazanan)",
+            "function piyasaSayisi() view returns (uint256)",
+            "function bahisYap(uint256 _id, bool _secim) payable"
+        ];
+
+        // Piyasaları Kontrattan Çekme
+        async function loadMarkets() {
+            if (!window.ethereum) return;
+            
+            try {
+                const provider = new ethers.providers.Web3Provider(window.ethereum);
+                const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
+                const count = await contract.piyasaSayisi();
+                const grid = document.getElementById('market-grid');
+                grid.innerHTML = "";
+
+                for (let i = 0; i < count; i++) {
+                    const m = await contract.piyasalar(i);
+                    grid.innerHTML += `
+                        <div class="glass-card p-8 flex flex-col justify-between h-[320px]">
+                            <div>
+                                <span class="text-[10px] font-black text-blue-500 uppercase tracking-widest">Live Market #${i}</span>
+                                <h3 class="text-xl font-bold my-4 italic leading-tight">${m.soru}</h3>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <button onclick="bet(${i}, true)" class="bg-green-500/10 text-green-400 py-4 rounded-2xl font-black border border-green-500/20 hover:bg-green-500 hover:text-white transition">EVET</button>
+                                <button onclick="bet(${i}, false)" class="bg-red-500/10 text-red-400 py-4 rounded-2xl font-black border border-red-500/20 hover:bg-red-500 hover:text-white transition">HAYIR</button>
+                            </div>
+                        </div>
+                    `;
+                }
+            } catch (err) {
+                console.log("Cüzdan bağlandığında piyasalar görünecek.");
+            }
+        }
+
+        // Bahis Fonksiyonu
+        async function bet(id, choice) {
+            if (!window.ethereum) return alert("Önce giriş yapmalısın!");
+            const provider = new ethers.providers.Web3Provider(window.ethereum);
+            const signer = provider.getSigner();
+            const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+            
+            const miktar = prompt("Yatırmak istediğiniz miktar (POL/ETH):", "0.1");
+            if (!miktar) return;
+
+            try {
+                const tx = await contract.bahisYap(id, choice, { value: ethers.utils.parseEther(miktar) });
+                await tx.wait();
+                alert("İşlem Başarılı!");
+                loadMarkets();
+            } catch (e) {
+                alert("Hata oluştu veya işlem reddedildi.");
+            }
+        }
+
+        // Cüzdan bağlandığında piyasaları yükle
+        window.addEventListener('load', loadMarkets);
+        setInterval(loadMarkets, 8000); // 8 saniyede bir güncelle
+    </script>
 </body>
 </html>
