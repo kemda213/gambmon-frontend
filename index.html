@@ -3,129 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gambmon | Liquid Prediction</title>
+    <title>Gambmon | Global Prediction Market</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://unpkg.com/@thirdweb-dev/web-components@latest/dist/index.js"></script>
 
     <style>
         body {
-            background: #020408; color: white; font-family: 'Plus Jakarta Sans', sans-serif;
-            background-image: radial-gradient(circle at top left, #0d1a35, transparent);
+            background-color: #020408; color: white; font-family: 'Plus Jakarta Sans', sans-serif;
+            background-image: radial-gradient(circle at 15% 15%, #0d1a35, transparent 50%);
             min-height: 100vh;
         }
-        .glass-card {
-            background: rgba(255, 255, 255, 0.02);
-            backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 28px;
+        .liquid-card {
+            background: rgba(255, 255, 255, 0.01);
+            backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 32px; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        /* Thirdweb butonunu sitemize uyduralım */
+        .liquid-card:hover { border-color: #2563eb; transform: scale(1.02); }
+        
         thirdweb-connect-button::part(connect-button) {
-            background: #2563eb !important;
-            border-radius: 14px !important;
-            font-weight: 800 !important;
+            background: #2563eb !important; border-radius: 16px !important;
+            font-weight: 800 !important; text-transform: uppercase !important;
         }
     </style>
 </head>
-<body>
+<body class="p-6">
 
-    <nav class="flex justify-between items-center p-6 border-b border-white/5 backdrop-blur-md sticky top-0 z-50 bg-black/40">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/40">
-                <i class="fa-solid fa-droplet text-white"></i>
+    <nav class="container mx-auto flex justify-between items-center mb-12 p-6 liquid-card">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/50">
+                <i class="fa-solid fa-bolt text-white text-xl"></i>
             </div>
-            <span class="text-2xl font-black tracking-tighter uppercase italic">Gambmon</span>
+            <h1 class="text-3xl font-black tracking-tighter uppercase italic">Gambmon</h1>
         </div>
 
-        <div id="connect-container">
-            <thirdweb-connect-button 
-                client-id="a91dc5f9489704aa3aff08b0566043b9"
-                theme="dark">
-            </thirdweb-connect-button>
-        </div>
+        <thirdweb-connect-button 
+            client-id="a91dc5f9489704aa3aff08b0566043b9" 
+            theme="dark">
+        </thirdweb-connect-button>
     </nav>
 
-    <main class="container mx-auto px-6 py-12">
-        <div class="mb-10 text-center md:text-left">
-            <h1 class="text-4xl font-black italic mb-2 tracking-tight uppercase">Piyasalar</h1>
-            <p class="text-slate-500 font-medium italic">Bağlanın ve geleceği tahmin edin.</p>
-        </div>
+    <main class="container mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <div class="space-y-6">
+            <div class="liquid-card p-8 border-t-4 border-blue-500">
+                <h2 class="text-xs font-bold text-slate-500 uppercase tracking-[3px] mb-4">Toplam Havuz</h2>
+                <div class="flex items-baseline gap-2">
+                    <span class="text-5xl font-black">7.22</span>
+                    <span class="text-blue-500 font-bold uppercase">Pol</span>
+                </div>
+            </div>
 
-        <div id="market-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div class="col-span-full glass-card p-20 text-center">
-                <i class="fa-solid fa-circle-notch fa-spin text-3xl mb-4 text-blue-500"></i>
-                <p class="text-slate-500 font-bold uppercase tracking-widest text-xs">Bağlantı Bekleniyor...</p>
+            <div class="liquid-card p-8">
+                <h2 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Kontrat Durumu</h2>
+                <div class="flex items-center gap-3">
+                    <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                    <span class="text-sm font-mono text-blue-300 break-all">YOUR_CONTRACT_ADDRESS</span>
+                </div>
             </div>
         </div>
+
+        <div class="lg:col-span-2 space-y-6">
+            <div class="liquid-card p-10 relative overflow-hidden">
+                <span class="bg-blue-600/20 text-blue-400 text-[10px] font-black px-4 py-2 rounded-full uppercase tracking-tighter border border-blue-500/20">
+                    Günün Tahmini
+                </span>
+                
+                <h3 class="text-3xl font-extrabold my-8 italic leading-tight">
+                    MarketplaceV3 üzerinde ilk büyük bahis: <br>
+                    <span class="text-blue-500 text-4xl">Kripto Boğası Başladı Mı?</span>
+                </h3>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <button class="py-6 rounded-3xl bg-green-500/10 border border-green-500/10 text-green-400 font-black text-2xl hover:bg-green-500 hover:text-white transition-all shadow-xl shadow-green-500/5">
+                        EVET
+                    </button>
+                    <button class="py-6 rounded-3xl bg-red-500/10 border border-red-500/10 text-red-400 font-black text-2xl hover:bg-red-500 hover:text-white transition-all shadow-xl shadow-red-500/5">
+                        HAYIR
+                    </button>
+                </div>
+
+                <p class="text-center text-slate-500 text-[11px] mt-8 uppercase font-bold tracking-widest">
+                    Google veya Coinbase ile giriş yaparak hemen katılın
+                </p>
+            </div>
+        </div>
+
     </main>
 
-    <script src="https://unpkg.com/@thirdweb-dev/web-components@latest/dist/index.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
-
     <script>
-        // --- AYARLAR ---
-        const CONTRACT_ADDRESS = "0xB58f40e78f65D712c173F969A402E4Fd467D3b48"; 
-        const ABI = [
-            "function piyasalar(uint256) view returns (string soru, uint256 evetToplam, uint256 hayirToplam, bool bitti, int8 kazanan)",
-            "function piyasaSayisi() view returns (uint256)",
-            "function bahisYap(uint256 _id, bool _secim) payable"
-        ];
-
-        // Piyasaları Kontrattan Çekme
-        async function loadMarkets() {
-            if (!window.ethereum) return;
-            
-            try {
-                const provider = new ethers.providers.Web3Provider(window.ethereum);
-                const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
-                const count = await contract.piyasaSayisi();
-                const grid = document.getElementById('market-grid');
-                grid.innerHTML = "";
-
-                for (let i = 0; i < count; i++) {
-                    const m = await contract.piyasalar(i);
-                    grid.innerHTML += `
-                        <div class="glass-card p-8 flex flex-col justify-between h-[320px]">
-                            <div>
-                                <span class="text-[10px] font-black text-blue-500 uppercase tracking-widest">Live Market #${i}</span>
-                                <h3 class="text-xl font-bold my-4 italic leading-tight">${m.soru}</h3>
-                            </div>
-                            <div class="grid grid-cols-2 gap-4">
-                                <button onclick="bet(${i}, true)" class="bg-green-500/10 text-green-400 py-4 rounded-2xl font-black border border-green-500/20 hover:bg-green-500 hover:text-white transition">EVET</button>
-                                <button onclick="bet(${i}, false)" class="bg-red-500/10 text-red-400 py-4 rounded-2xl font-black border border-red-500/20 hover:bg-red-500 hover:text-white transition">HAYIR</button>
-                            </div>
-                        </div>
-                    `;
-                }
-            } catch (err) {
-                console.log("Cüzdan bağlandığında piyasalar görünecek.");
-            }
-        }
-
-        // Bahis Fonksiyonu
-        async function bet(id, choice) {
-            if (!window.ethereum) return alert("Önce giriş yapmalısın!");
-            const provider = new ethers.providers.Web3Provider(window.ethereum);
-            const signer = provider.getSigner();
-            const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
-            
-            const miktar = prompt("Yatırmak istediğiniz miktar (POL/ETH):", "0.1");
-            if (!miktar) return;
-
-            try {
-                const tx = await contract.bahisYap(id, choice, { value: ethers.utils.parseEther(miktar) });
-                await tx.wait();
-                alert("İşlem Başarılı!");
-                loadMarkets();
-            } catch (e) {
-                alert("Hata oluştu veya işlem reddedildi.");
-            }
-        }
-
-        // Cüzdan bağlandığında piyasaları yükle
-        window.addEventListener('load', loadMarkets);
-        setInterval(loadMarkets, 8000); // 8 saniyede bir güncelle
+        // İleride buraya kontrattan anlık veri çekecek JS fonksiyonlarını ekleyeceğiz.
+        console.log("Gambmon Liquid Interface v1.0 Aktif");
     </script>
 </body>
 </html>
