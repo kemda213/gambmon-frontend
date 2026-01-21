@@ -3,74 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gambmon | Liquid Market</title>
+    <title>Gambmon | Liquid Pro</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@rainbow-me/rainbowkit@1.0.0/dist/index.css">
     
-    <script src="https://unpkg.com/@thirdweb-dev/web-components@latest/dist/index.js"></script>
-
     <style>
         body {
-            background: #020408; color: white; font-family: 'Plus Jakarta Sans', sans-serif;
+            background: #020408; color: white;
             background-image: radial-gradient(circle at 10% 10%, #0d1a35, transparent 50%);
-            min-height: 100vh; margin: 0;
+            min-height: 100vh;
         }
-        .liquid-card {
-            background: rgba(255, 255, 255, 0.02);
-            backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 32px;
-        }
-        /* Connect Button Tasarımı */
-        thirdweb-connect-button::part(connect-button) {
-            background: #2563eb !important;
-            border-radius: 16px !important;
-            font-weight: 800 !important;
-            padding: 12px 28px !important;
-            box-shadow: 0 10px 20px rgba(37, 99, 235, 0.2) !important;
-        }
+        .glass { background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 24px; }
     </style>
 </head>
-<body>
+<body class="p-8">
 
-    <nav class="p-6 flex justify-between items-center border-b border-white/5 backdrop-blur-md sticky top-0 z-50">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center font-black italic">G</div>
-            <span class="text-2xl font-black italic uppercase tracking-tighter">Gambmon</span>
-        </div>
+    <nav class="container mx-auto flex justify-between items-center mb-12 p-6 glass">
+        <h1 class="text-2xl font-black italic text-blue-500 uppercase">Gambmon</h1>
         
-        <thirdweb-connect-button 
-            client-id="a91dc5f9489704aa3aff08b0566043b9" 
-            theme="dark">
-        </thirdweb-connect-button>
+        <div id="connect-btn-root"></div>
     </nav>
 
-    <main class="container mx-auto px-6 py-20">
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
-            
-            <div>
-                <h2 class="text-6xl font-black italic uppercase mb-6 leading-tight">Tahmin Et,<br><span class="text-blue-500">Kazan.</span></h2>
-                <div class="liquid-card p-8 inline-block">
-                    <p class="text-slate-500 font-bold uppercase tracking-widest text-xs mb-2">Havuzdaki Toplam Miktar</p>
-                    <div class="text-5xl font-black">7.22 <span class="text-2xl text-blue-500">POL</span></div>
-                </div>
-            </div>
-
-            <div class="liquid-card p-10 relative overflow-hidden">
-                <div class="flex items-center gap-2 mb-6">
-                    <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                    <span class="text-green-500 text-xs font-bold uppercase tracking-widest">Canlı Pazar</span>
-                </div>
-                <h3 class="text-2xl font-bold italic mb-10 leading-snug">MarketplaceV3 Kontratı Üzerinden İlk Tahmininizi Yapın</h3>
-                
-                <div class="flex flex-col gap-4">
-                    <button class="w-full py-5 rounded-2xl bg-white/5 border border-white/10 font-black text-xl hover:bg-white/10 transition">Piyasaları Görüntüle</button>
-                    <p class="text-[10px] text-slate-600 text-center font-mono">Contract: 0x47E00Da00C16Ef1E12cb5703513a0433E718449A</p>
-                </div>
-            </div>
-
+    <main class="container mx-auto text-center">
+        <div class="glass max-w-lg mx-auto p-12">
+            <h2 class="text-sm font-bold text-slate-500 uppercase tracking-widest mb-4">Market Havuzu</h2>
+            <div class="text-6xl font-black text-white">7.22 <span class="text-blue-600 text-2xl">POL</span></div>
         </div>
     </main>
 
+    <script type="module">
+        import { getDefaultWallets, RainbowKitProvider, ConnectButton } from 'https://cdn.skypack.dev/@rainbow-me/rainbowkit';
+        import { createConfig, WagmiConfig, configureChains } from 'https://cdn.skypack.dev/wagmi';
+        import { polygon } from 'https://cdn.skypack.dev/wagmi/chains';
+        import { publicProvider } from 'https://cdn.skypack.dev/wagmi/providers/public';
+        import React from 'https://cdn.skypack.dev/react';
+        import ReactDOM from 'https://cdn.skypack.dev/react-dom';
+
+        const { chains, publicClient } = configureChains([polygon], [publicProvider()]);
+        const { connectors } = getDefaultWallets({
+            appName: 'Gambmon',
+            projectId: '5abf099d30991871fd1966ab454dbb97', // WalletConnect'ten alacağın ID
+            chains
+        });
+
+        const wagmiConfig = createConfig({ autoConnect: true, connectors, publicClient });
+
+        function App() {
+            return React.createElement(WagmiConfig, { config: wagmiConfig },
+                React.createElement(RainbowKitProvider, { chains },
+                    React.createElement(ConnectButton)
+                )
+            );
+        }
+
+        ReactDOM.render(React.createElement(App), document.getElementById('connect-btn-root'));
+    </script>
 </body>
 </html>
