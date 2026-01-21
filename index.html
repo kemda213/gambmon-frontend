@@ -2,26 +2,60 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Gambdom Pro | Tahmin Pazarı</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gambdom Pro | Web3 Tahmin Borsası</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
-        body { font-family: sans-serif; background: #0f172a; color: white; text-align: center; padding: 20px; }
-        .card { background: #1e293b; border-radius: 15px; padding: 20px; margin: 10px auto; max-width: 400px; border: 1px solid #334155; }
-        .btn { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin: 5px; }
-        .btn-yes { background: #22c55e; color: white; }
-        .btn-no { background: #ef4444; color: white; }
-        .btn-claim { background: #38bdf8; color: white; width: 100%; margin-top: 10px; }
-        .status-tag { font-size: 0.8em; padding: 4px 8px; border-radius: 4px; background: #475569; }
+        body { background-color: #0f172a; color: #e2e8f0; font-family: 'Inter', sans-serif; }
+        .market-card { transition: all 0.3s ease; border: 1px solid #1e293b; }
+        .market-card:hover { transform: translateY(-5px); border-color: #3b82f6; box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.15); }
+        .btn-connect { background: linear-gradient(90deg, #2563eb, #1d4ed8); }
+        .progress-bar-bg { background-color: #334155; height: 6px; border-radius: 999px; overflow: hidden; }
+        .yes-bar { background-color: #10b981; height: 100%; }
+        .no-bar { background-color: #ef4444; height: 100%; }
     </style>
 </head>
-<body>
+<body class="min-h-screen flex flex-col">
 
-    <h1>🎲 GAMBDOM PRO</h1>
-    <button id="connectBtn" class="btn" style="background:#2563eb; color:white;">Cüzdanı Bağla</button>
-    <div id="market-list"></div>
+    <nav class="sticky top-0 z-50 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 py-4">
+        <div class="container mx-auto px-4 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <i class="fa-solid fa-dice-d20 text-3xl text-blue-500"></i>
+                <h1 class="text-2xl font-bold tracking-tight text-white">GAMBDOM <span class="text-blue-500">PRO</span></h1>
+            </div>
+            <button id="connectBtn" class="btn-connect px-6 py-2 rounded-full font-semibold text-white shadow-lg hover:brightness-110 transition">
+                <i class="fa-solid fa-wallet mr-2"></i> Cüzdanı Bağla
+            </button>
+        </div>
+    </nav>
+
+    <header class="py-12 text-center bg-slate-900">
+        <h2 class="text-4xl md:text-5xl font-extrabold text-white mb-4">Geleceği Tahmin Et</h2>
+        <p class="text-slate-400 text-lg max-w-2xl mx-auto">Spor, Kripto ve Gündem üzerine bahis yap. Merkeziyetsiz, şeffaf ve anında ödeme.</p>
+    </header>
+
+    <main class="container mx-auto px-4 pb-20 flex-grow">
+        <div id="loading" class="text-center text-slate-500 mt-10 hidden">
+            <i class="fa-solid fa-circle-notch fa-spin text-3xl"></i>
+            <p class="mt-2">Piyasalar Yükleniyor...</p>
+        </div>
+        
+        <div id="market-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            </div>
+    </main>
+
+    <footer class="bg-slate-900 border-t border-slate-800 py-8 text-center text-slate-500 text-sm">
+        <p>&copy; 2024 Gambdom Pro. Polygon Ağı Üzerinde Çalışır.</p>
+    </footer>
 
 <script>
-    const contractAddress = "0xB58f40e78f65D712c173F969A402E4Fd467D3b48";
+    // --- AYARLAR ---
+    const contractAddress = "0xB58f40e78f65D712c173F969A402E4Fd467D3b48"; // <--- GÜNCELLE
+    // ----------------
+    
     const abi = [
         "function piyasalar(uint256) view returns (string soru, uint256 evetToplam, uint256 hayirToplam, bool bitti, int8 kazanan)",
         "function piyasaSayisi() view returns (uint256)",
@@ -32,56 +66,128 @@
     let signer, contract;
 
     async function connect() {
+        if (typeof window.ethereum === "undefined") {
+            alert("Lütfen MetaMask yükleyin!");
+            return;
+        }
         const provider = new ethers.providers.Web3Provider(window.ethereum);
         await provider.send("eth_requestAccounts", []);
         signer = provider.getSigner();
         contract = new ethers.Contract(contractAddress, abi, signer);
-        document.getElementById('connectBtn').innerText = "Bağlandı";
+        
+        const address = await signer.getAddress();
+        document.getElementById('connectBtn').innerHTML = `<i class="fa-solid fa-user-check mr-2"></i> ${address.slice(0,6)}...${address.slice(-4)}`;
+        document.getElementById('connectBtn').classList.replace('btn-connect', 'bg-slate-700');
+        
         loadMarkets();
     }
 
     async function loadMarkets() {
+        document.getElementById('loading').classList.remove('hidden');
         const list = document.getElementById('market-list');
-        const count = await contract.piyasaSayisi();
         list.innerHTML = "";
-        for (let i = 0; i < count; i++) {
-            const m = await contract.piyasalar(i);
-            const status = m.bitti ? "KAPANDI" : "AKTİF";
-            let actionButtons = `
-                <button class="btn btn-yes" onclick="bet(${i}, true)">EVET</button>
-                <button class="btn btn-no" onclick="bet(${i}, false)">HAYIR</button>`;
 
-            if (m.bitti) {
-                actionButtons = `<button class="btn btn-claim" onclick="claim(${i})">🎁 ÖDÜLÜMÜ ÇEK</button>`;
+        try {
+            const count = await contract.piyasaSayisi();
+            
+            for (let i = count - 1; i >= 0; i--) { // En yeniyi en başa koy
+                const m = await contract.piyasalar(i);
+                
+                const evetEth = parseFloat(ethers.utils.formatEther(m.evetToplam));
+                const hayirEth = parseFloat(ethers.utils.formatEther(m.hayirToplam));
+                const total = evetEth + hayirEth;
+                
+                // Yüzde Hesaplama (Polymarket Tarzı)
+                let evetYuzde = 50;
+                if (total > 0) evetYuzde = (evetEth / total) * 100;
+                let hayirYuzde = 100 - evetYuzde;
+
+                const statusBadge = m.bitti 
+                    ? `<span class="bg-slate-700 text-slate-300 px-2 py-1 rounded text-xs font-bold">KAPANDI</span>` 
+                    : `<span class="bg-green-500/20 text-green-400 px-2 py-1 rounded text-xs font-bold flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> CANLI</span>`;
+
+                let actionArea = "";
+                
+                if (m.bitti) {
+                    actionArea = `
+                        <button onclick="claim(${i})" class="w-full mt-4 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg transition shadow-lg">
+                            <i class="fa-solid fa-gift mr-2"></i> Kazancını Çek
+                        </button>
+                    `;
+                } else {
+                    actionArea = `
+                        <div class="grid grid-cols-2 gap-3 mt-4">
+                            <button onclick="bet(${i}, true)" class="group bg-slate-800 hover:bg-green-500/10 border border-green-500/30 hover:border-green-500 text-green-500 font-bold py-2 rounded-lg transition flex flex-col items-center">
+                                <span>EVET</span>
+                                <span class="text-xs text-slate-400 group-hover:text-green-300">%${evetYuzde.toFixed(0)}</span>
+                            </button>
+                            <button onclick="bet(${i}, false)" class="group bg-slate-800 hover:bg-red-500/10 border border-red-500/30 hover:border-red-500 text-red-500 font-bold py-2 rounded-lg transition flex flex-col items-center">
+                                <span>HAYIR</span>
+                                <span class="text-xs text-slate-400 group-hover:text-red-300">%${hayirYuzde.toFixed(0)}</span>
+                            </button>
+                        </div>
+                    `;
+                }
+
+                const cardHTML = `
+                    <div class="market-card bg-slate-800 rounded-xl p-5 flex flex-col justify-between h-full">
+                        <div>
+                            <div class="flex justify-between items-start mb-3">
+                                <div class="flex gap-2">
+                                    <i class="fa-brands fa-bitcoin text-2xl text-orange-500"></i> ${statusBadge}
+                                </div>
+                                <span class="text-slate-400 text-xs font-mono">Hacim: ${total.toFixed(2)} POL</span>
+                            </div>
+                            <h3 class="text-xl font-bold text-white leading-snug mb-4">${m.soru}</h3>
+                            
+                            <div class="flex justify-between text-xs text-slate-400 mb-1">
+                                <span>Evet %${evetYuzde.toFixed(1)}</span>
+                                <span>Hayır %${hayirYuzde.toFixed(1)}</span>
+                            </div>
+                            <div class="progress-bar-bg flex">
+                                <div class="yes-bar" style="width: ${evetYuzde}%"></div>
+                                <div class="no-bar" style="width: ${hayirYuzde}%"></div>
+                            </div>
+                        </div>
+
+                        ${actionArea}
+                    </div>
+                `;
+                list.innerHTML += cardHTML;
             }
-
-            list.innerHTML += `
-                <div class="card">
-                    <span class="status-tag">${status}</span>
-                    <h3>${m.soru}</h3>
-                    <p>Evet: ${ethers.utils.formatEther(m.evetToplam)} POL</p>
-                    <p>Hayır: ${ethers.utils.formatEther(m.hayirToplam)} POL</p>
-                    ${actionButtons}
-                </div>`;
+        } catch (e) {
+            console.error(e);
+            list.innerHTML = `<p class="text-red-400 text-center">Veriler yüklenemedi. Cüzdan bağlı mı?</p>`;
         }
+        document.getElementById('loading').classList.add('hidden');
     }
 
     async function bet(id, choice) {
-        const tx = await contract.bahisYap(id, choice, { value: ethers.utils.parseEther("0.1") });
-        await tx.wait();
-        loadMarkets();
+        if(!contract) return alert("Önce cüzdanı bağla!");
+        const miktar = prompt("Kaç POL yatıracaksın?", "0.1");
+        if(!miktar) return;
+        
+        try {
+            const tx = await contract.bahisYap(id, choice, { value: ethers.utils.parseEther(miktar) });
+            alert("İşlem gönderildi, lütfen bekleyin...");
+            await tx.wait();
+            loadMarkets();
+        } catch(e) { alert("Hata: " + e.message); }
     }
 
     async function claim(id) {
+        if(!contract) return alert("Önce cüzdanı bağla!");
         try {
             const tx = await contract.odulCek(id);
             await tx.wait();
-            alert("Ödül başarıyla çekildi!");
-            loadMarkets();
-        } catch (e) { alert("Çekilecek ödül yok veya zaten çekildi!"); }
+            alert("Ödül başarıyla cüzdana çekildi! 🚀");
+        } catch (e) { alert("Hata: Çekilecek ödül yok veya zaten çekildi."); }
     }
 
     document.getElementById('connectBtn').onclick = connect;
+    // Sayfa açılınca otomatik bağlanmayı dene (opsiyonel)
+    // window.onload = connect;
 </script>
+
 </body>
 </html>
