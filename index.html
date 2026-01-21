@@ -3,89 +3,134 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gambmon | Liquid Prediction & Charts</title>
+    <title>Gambmon | Liquid Prediction Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
 
     <style>
-        :root { --p-blue: #2563eb; --p-green: #10b981; --p-red: #ef4444; }
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #0f172a; }
+        :root { --accent: #3b82f6; --bg: #04070d; --card: #0d121f; }
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background-color: var(--bg); 
+            color: #ffffff;
+            background-image: radial-gradient(circle at 50% -20%, #1e293b 0%, #04070d 100%);
+        }
 
+        /* Sıvı Cam Efekti */
         .liquid-card {
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(0, 0, 0, 0.05);
-            border-radius: 24px;
+            background: rgba(13, 18, 31, 0.4);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 28px;
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+        .liquid-card:hover {
+            background: rgba(13, 18, 31, 0.6);
+            border-color: rgba(59, 130, 246, 0.5);
+            transform: translateY(-8px) scale(1.01);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Glass Navbar */
+        .nav-blur {
+            background: rgba(4, 7, 13, 0.7);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Neon Progress Bar */
+        .progress-track { background: rgba(255, 255, 255, 0.05); height: 8px; border-radius: 99px; overflow: hidden; }
+        .yes-fill { background: linear-gradient(90deg, #10b981, #34d399); box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); transition: width 1s ease; }
+
+        /* Buton Parlaması */
+        .btn-premium {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
             transition: all 0.3s ease;
         }
-        .liquid-card:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1); border-color: var(--p-blue); }
+        .btn-premium:hover { box-shadow: 0 0 25px rgba(59, 130, 246, 0.4); transform: translateY(-2px); }
 
-        /* Grafik Konteyner */
-        .chart-container { width: 100%; height: 60px; margin-top: 10px; }
-
-        /* Glass Header */
-        .glass-header {
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(15px);
-            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        #betSlip { 
+            background: rgba(13, 18, 31, 0.95);
+            backdrop-filter: blur(30px);
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+            transform: translateX(100%); 
+            transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1); 
         }
-
-        #betSlip { transform: translateX(100%); transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
         #betSlip.open { transform: translateX(0); }
+
+        .chart-wrapper { height: 120px; width: 100%; margin: 15px 0; }
     </style>
 </head>
-<body>
+<body class="min-h-screen">
 
-    <nav class="sticky top-0 z-50 glass-header">
-        <div class="container mx-auto px-4 flex items-center justify-between h-16">
-            <div class="flex items-center gap-2 cursor-pointer" onclick="location.reload()">
-                <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
-                    <i class="fa-solid fa-chart-line text-white text-xl"></i>
+    <nav class="sticky top-0 z-50 nav-blur">
+        <div class="container mx-auto px-6 flex items-center justify-between h-20">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
+                    <i class="fa-solid fa-bolt-lightning text-white"></i>
                 </div>
-                <span class="text-2xl font-black tracking-tighter">GAMBMON</span>
+                <span class="text-2xl font-extrabold tracking-tighter uppercase italic">Gambmon</span>
             </div>
-            <button onclick="connect()" id="connectBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-full transition">
+            
+            <div class="hidden md:flex bg-white/5 rounded-full px-4 py-2 border border-white/10 w-1/3">
+                <i class="fa-solid fa-magnifying-glass text-gray-500 mt-1 mr-3"></i>
+                <input type="text" placeholder="Piyasaları tara..." class="bg-transparent border-none outline-none text-sm w-full">
+            </div>
+
+            <button onclick="connect()" id="connectBtn" class="btn-premium px-8 py-2.5 rounded-full font-bold text-sm">
                 Cüzdanı Bağla
             </button>
         </div>
     </nav>
 
-    <main class="container mx-auto px-4 py-12">
-        <div class="flex justify-between items-end mb-8">
+    <main class="container mx-auto px-6 py-12">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-16 gap-6">
             <div>
-                <h2 class="text-3xl font-extrabold text-slate-900 tracking-tight">Canlı Piyasalar</h2>
-                <p class="text-slate-500">Gerçek zamanlı borsa verileriyle tahmin yapın.</p>
+                <h1 class="text-4xl md:text-5xl font-extrabold mb-2 tracking-tight">Merkeziyetsiz Borsa</h1>
+                <p class="text-gray-400 text-lg">Geleceği tahmin et, likiditeye yön ver.</p>
             </div>
-            <div class="flex gap-2">
-                <span class="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-xs font-bold uppercase">Polygon Mainnet</span>
+            <div class="flex gap-4">
+                <div class="bg-white/5 p-4 rounded-2xl border border-white/10">
+                    <p class="text-xs text-gray-500 font-bold mb-1 uppercase">Aktif Piyasa</p>
+                    <p class="text-xl font-mono font-bold" id="totalCount">--</p>
+                </div>
+                <div class="bg-white/5 p-4 rounded-2xl border border-white/10">
+                    <p class="text-xs text-gray-500 font-bold mb-1 uppercase">Ağ Durumu</p>
+                    <p class="text-xl font-bold text-green-500 flex items-center gap-2">
+                        <span class="w-2 h-2 bg-green-500 rounded-full animate-ping"></span> Polygon
+                    </p>
+                </div>
             </div>
         </div>
 
-        <div id="market-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div id="market-list" class="grid grid-cols-1 lg:grid-cols-2 gap-8">
             </div>
     </main>
 
-    <div id="betSlip" class="fixed right-0 top-0 h-full w-full md:w-96 bg-white z-[60] shadow-2xl p-8 border-l border-slate-100">
-        <div class="flex justify-between items-center mb-10">
-            <h3 class="text-2xl font-bold italic">İşlem Emri</h3>
-            <button onclick="closeBetSlip()" class="text-slate-400 hover:text-slate-800"><i class="fa-solid fa-xmark text-2xl"></i></button>
+    <div id="betSlip" class="fixed right-0 top-0 h-full w-full md:w-[450px] z-[60] shadow-2xl p-10">
+        <div class="flex justify-between items-center mb-12">
+            <h3 class="text-3xl font-black italic uppercase">Piyasa Emri</h3>
+            <button onclick="closeBetSlip()" class="w-12 h-12 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 transition">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
         </div>
-        
-        <div id="slipContent" class="space-y-6">
+
+        <div id="slipContent" class="space-y-8">
             </div>
 
-        <div class="absolute bottom-10 left-8 right-8">
-            <button id="confirmBetBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl shadow-xl transition-all active:scale-95">
-                ONAYLA VE GÖNDER
+        <div class="absolute bottom-12 left-10 right-10">
+            <button id="confirmBetBtn" class="w-full btn-premium py-5 rounded-3xl font-black text-lg tracking-widest uppercase">
+                Emri Onayla
             </button>
         </div>
     </div>
 
 <script>
-    const contractAddress = "BURAYA_GERCEK_KONTRAT_ADRESINI_YAZ";
+    const contractAddress = "0xB58f40e78f65D712c173F969A402E4Fd467D3b48";
     const abi = [
         "function piyasalar(uint256) view returns (string soru, uint256 evetToplam, uint256 hayirToplam, bool bitti, int8 kazanan)",
         "function piyasaSayisi() view returns (uint256)",
@@ -96,12 +141,12 @@
     let signer, contract, selectedMarketId, selectedChoice;
 
     async function connect() {
-        if (!window.ethereum) return alert("MetaMask bulunamadı!");
+        if (!window.ethereum) return alert("MetaMask?");
         const provider = new ethers.providers.Web3Provider(window.ethereum);
         await provider.send("eth_requestAccounts", []);
         signer = provider.getSigner();
         contract = new ethers.Contract(contractAddress, abi, signer);
-        document.getElementById('connectBtn').innerText = "Bağlandı";
+        document.getElementById('connectBtn').innerText = "Bağlı";
         loadMarkets();
     }
 
@@ -110,6 +155,8 @@
         list.innerHTML = "";
         try {
             const count = await contract.piyasaSayisi();
+            document.getElementById('totalCount').innerText = count.toString();
+
             for (let i = count - 1; i >= 0; i--) {
                 const m = await contract.piyasalar(i);
                 const evet = parseFloat(ethers.utils.formatEther(m.evetToplam));
@@ -117,70 +164,64 @@
                 const total = evet + hayir;
                 const ratio = total > 0 ? (evet / total) * 100 : 50;
 
-                const cardId = `market-${i}`;
-                const chartId = `chart-${i}`;
-
                 const cardHTML = `
-                    <div class="liquid-card p-6 flex flex-col justify-between" id="${cardId}">
+                    <div class="liquid-card p-8 flex flex-col justify-between">
                         <div>
-                            <div class="flex justify-between items-start mb-4">
-                                <span class="text-[10px] font-black bg-slate-900 text-white px-2 py-1 rounded">ID: #${i}</span>
-                                <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded italic">Hacim: ${total.toFixed(2)} POL</span>
+                            <div class="flex justify-between items-center mb-6">
+                                <span class="bg-blue-600/20 text-blue-400 px-4 py-1 rounded-full text-xs font-black border border-blue-500/20">#${i}</span>
+                                <span class="text-xs font-bold text-gray-500 uppercase tracking-widest">Hacim: ${total.toFixed(2)} POL</span>
                             </div>
-                            <h4 class="font-bold text-lg text-slate-800 leading-tight mb-4">${m.soru}</h4>
+                            <h2 class="text-2xl font-bold leading-tight mb-8 h-16 line-clamp-2">${m.soru}</h2>
                             
-                            <div class="chart-container">
-                                <canvas id="${chartId}"></canvas>
+                            <div class="chart-wrapper">
+                                <canvas id="chart-${i}"></canvas>
                             </div>
 
-                            <div class="flex justify-between text-xs mt-4 mb-2 font-bold">
-                                <span class="text-green-600">EVET %${ratio.toFixed(0)}</span>
-                                <span class="text-red-600">HAYIR %${(100-ratio).toFixed(0)}</span>
+                            <div class="flex justify-between text-sm font-black mb-3">
+                                <span class="text-emerald-400 font-mono">EVET %${ratio.toFixed(1)}</span>
+                                <span class="text-rose-500 font-mono">HAYIR %${(100-ratio).toFixed(1)}</span>
+                            </div>
+                            <div class="progress-track">
+                                <div class="yes-fill" style="width: ${ratio}%"></div>
                             </div>
                         </div>
-                        
-                        <div class="grid grid-cols-2 gap-2 mt-4">
-                            <button onclick="openBetSlip(${i}, 'EVET', ${ratio})" class="bg-slate-100 hover:bg-green-500 hover:text-white text-green-600 font-bold py-3 rounded-xl transition text-sm">EVET</button>
-                            <button onclick="openBetSlip(${i}, 'HAYIR', ${100-ratio})" class="bg-slate-100 hover:bg-red-500 hover:text-white text-red-600 font-bold py-3 rounded-xl transition text-sm">HAYIR</button>
+
+                        <div class="flex gap-4 mt-8">
+                            <button onclick="openBetSlip(${i}, 'EVET', ${ratio})" class="flex-grow bg-emerald-500/10 hover:bg-emerald-500 text-emerald-500 hover:text-white border border-emerald-500/20 font-black py-4 rounded-2xl transition">SATIN AL: EVET</button>
+                            <button onclick="openBetSlip(${i}, 'HAYIR', ${100-ratio})" class="flex-grow bg-rose-500/10 hover:bg-rose-500 text-rose-500 hover:text-white border border-rose-500/20 font-black py-4 rounded-2xl transition">SATIN AL: HAYIR</button>
                         </div>
                     </div>
                 `;
                 list.innerHTML += cardHTML;
-                
-                // Grafiği Oluştur (Hemen render olması için setTimeout kullanıyoruz)
-                setTimeout(() => renderChart(chartId, ratio), 100);
+                setTimeout(() => renderChart(`chart-${i}`, ratio), 100);
             }
         } catch(e) { console.error(e); }
     }
 
-    function renderChart(id, currentRatio) {
+    function renderChart(id, ratio) {
         const ctx = document.getElementById(id).getContext('2d');
-        // Rastgele bir trend oluştur (Sanki geçmiş veriler varmış gibi)
-        const base = 50;
-        const data = [base, base + 5, base - 3, base + 10, base + 2, currentRatio];
-        
+        const color = ratio >= 50 ? '#10b981' : '#f43f5e';
         new Chart(ctx, {
             type: 'line',
             data: {
-                labels: ['', '', '', '', '', ''],
+                labels: [1,2,3,4,5,6],
                 datasets: [{
-                    data: data,
-                    borderColor: currentRatio >= 50 ? '#10b981' : '#ef4444',
-                    borderWidth: 3,
-                    pointRadius: 0,
+                    data: [45, 52, 48, 60, ratio-5, ratio],
+                    borderColor: color,
+                    borderWidth: 4,
                     fill: true,
                     backgroundColor: (context) => {
-                        const gradient = context.chart.ctx.createLinearGradient(0, 0, 0, 60);
-                        gradient.addColorStop(0, currentRatio >= 50 ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)');
-                        gradient.addColorStop(1, 'transparent');
-                        return gradient;
+                        const g = context.chart.ctx.createLinearGradient(0, 0, 0, 120);
+                        g.addColorStop(0, color + '33');
+                        g.addColorStop(1, 'transparent');
+                        return g;
                     },
-                    tension: 0.4
+                    tension: 0.4,
+                    pointRadius: 0
                 }]
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
+                responsive: true, maintainAspectRatio: false,
                 plugins: { legend: { display: false } },
                 scales: { x: { display: false }, y: { display: false } }
             }
@@ -192,18 +233,21 @@
         selectedChoice = (choice === 'EVET');
         document.getElementById('betSlip').classList.add('open');
         document.getElementById('slipContent').innerHTML = `
-            <div class="p-6 bg-slate-50 rounded-3xl border border-slate-100">
-                <p class="text-xs font-black text-blue-600 mb-2">PİYASA #${id}</p>
-                <h4 class="font-bold text-slate-800 text-lg mb-6 leading-tight">Mevcut Oran: %${odds.toFixed(1)}</h4>
-                <div class="flex items-center justify-between bg-white p-4 rounded-2xl border-2 border-blue-500">
-                    <input type="number" id="betAmount" value="1.0" class="w-full text-2xl font-bold outline-none" oninput="updatePayout()">
-                    <span class="font-bold text-slate-400 ml-2">POL</span>
+            <div class="space-y-6">
+                <div class="p-8 bg-white/5 rounded-3xl border border-white/10">
+                    <p class="text-xs font-black text-gray-500 uppercase mb-2 tracking-widest">Seçilen Taraf</p>
+                    <h4 class="text-3xl font-extrabold ${selectedChoice ? 'text-emerald-400':'text-rose-500'}">${choice}</h4>
                 </div>
-            </div>
-            <div class="px-2 space-y-4">
-                <div class="flex justify-between items-center text-sm font-medium">
-                    <span class="text-slate-400">Tahmini Kazanç</span>
-                    <span class="text-green-600 font-bold text-lg" id="payout">-- POL</span>
+                <div class="p-8 bg-white/5 rounded-3xl border border-white/10">
+                    <p class="text-xs font-black text-gray-500 uppercase mb-4 tracking-widest">Yatırım Tutarı</p>
+                    <div class="flex items-center justify-between">
+                        <input type="number" id="betAmount" value="1.0" class="bg-transparent text-4xl font-black outline-none w-full">
+                        <span class="text-2xl font-bold text-gray-500">POL</span>
+                    </div>
+                </div>
+                <div class="flex justify-between p-4 px-2">
+                    <span class="text-gray-400 font-bold">Olası Kazanç</span>
+                    <span class="text-emerald-400 text-xl font-black" id="payout">-- POL</span>
                 </div>
             </div>
         `;
@@ -211,8 +255,8 @@
     }
 
     function updatePayout() {
-        const val = document.getElementById('betAmount').value;
-        document.getElementById('payout').innerText = (val * 1.85).toFixed(2) + " POL";
+        const v = document.getElementById('betAmount').value;
+        document.getElementById('payout').innerText = (v * 1.95).toFixed(2) + " POL";
     }
 
     function closeBetSlip() { document.getElementById('betSlip').classList.remove('open'); }
@@ -221,11 +265,10 @@
         const amt = document.getElementById('betAmount').value;
         try {
             const tx = await contract.bahisYap(selectedMarketId, selectedChoice, { value: ethers.utils.parseEther(amt) });
-            alert("İşlem onay bekliyor...");
+            alert("İşlem blockchain'e iletildi...");
             await tx.wait();
-            alert("İşlem Başarılı!");
-            closeBetSlip();
-            loadMarkets();
+            alert("Emir Gerçekleşti!");
+            closeBetSlip(); loadMarkets();
         } catch(e) { alert("Hata: " + e.message); }
     };
 
