@@ -3,99 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gambmon | Final Pro</title>
+    <title>Gambmon | Ready to Play</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&display=swap" rel="stylesheet">
     
+    <script src="https://unpkg.com/@thirdweb-dev/web-components@latest/dist/index.js"></script>
+
     <style>
         body {
             background: #020408; color: white; font-family: 'Plus Jakarta Sans', sans-serif;
-            background-image: radial-gradient(circle at 10% 10%, #0d1a35, transparent 50%);
-            min-height: 100vh; margin: 0; display: flex; flex-direction: column;
+            background-image: radial-gradient(circle at 15% 15%, #0d1a35, transparent 50%);
+            min-height: 100vh; margin: 0;
         }
         .liquid-card {
             background: rgba(255, 255, 255, 0.02);
             backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 28px;
         }
-        .connect-btn {
-            background: #2563eb; color: white; padding: 12px 32px;
-            border-radius: 16px; font-weight: 800; transition: all 0.3s ease;
-            cursor: pointer; border: none;
+        /* Thirdweb butonunu sitemize uydurma */
+        thirdweb-connect-button::part(connect-button) {
+            background: #2563eb !important;
+            color: white !important;
+            border-radius: 14px !important;
+            font-weight: 800 !important;
+            padding: 10px 24px !important;
         }
-        .connect-btn:hover { background: #1d4ed8; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3); }
     </style>
 </head>
 <body>
 
-    <nav class="p-6 flex justify-between items-center border-b border-white/5 backdrop-blur-md">
-        <div class="flex items-center gap-2">
+    <nav class="p-6 flex justify-between items-center border-b border-white/5 backdrop-blur-md sticky top-0 z-50">
+        <div class="flex items-center gap-3">
             <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center font-black italic">G</div>
             <span class="text-2xl font-black italic uppercase tracking-tighter">Gambmon</span>
         </div>
         
-        <button id="mainConnectBtn" class="connect-btn">BAĞLAN</button>
+        <thirdweb-connect-button 
+            client-id="BURAYA_CLIENT_ID_YAPIŞTIR" 
+            theme="dark">
+        </thirdweb-connect-button>
     </nav>
 
-    <main class="flex-grow flex items-center justify-center p-6">
-        <div class="liquid-card p-12 max-w-lg w-full text-center">
+    <main class="container mx-auto px-6 py-20 text-center">
+        <div class="liquid-card max-w-lg mx-auto p-12">
             <h2 class="text-xs font-bold text-blue-500 uppercase tracking-[4px] mb-4">Market Verisi</h2>
             <div class="text-6xl font-black mb-2">7.22 <span class="text-2xl text-slate-500">POL</span></div>
-            <p id="statusText" class="text-slate-500 text-sm mt-6 italic font-medium">Lütfen cüzdanınızı veya Google hesabınızı bağlayın.</p>
+            <p class="text-slate-400 mt-6 italic">Giriş yaptıktan sonra kontrat işlemleri aktifleşecektir.</p>
             
-            <div class="mt-8 pt-8 border-t border-white/5 text-[10px] font-mono text-slate-600 break-all">
-                YOUR_CONTRACT_ADDRESS
+            <div class="mt-8 pt-8 border-t border-white/5 text-[10px] font-mono text-slate-600 break-all uppercase tracking-widest">
+                a91dc5f9489704aa3aff08b0566043b9
             </div>
         </div>
     </main>
-
-    <script type="module">
-        import { createThirdwebClient } from "https://esm.sh/thirdweb";
-        import { createWallet, inAppWallet } from "https://esm.sh/thirdweb/wallets";
-        import { createConnectModal } from "https://esm.sh/thirdweb/react"; // Bu mantık modalı tetikler
-
-        // 1. AYARLAR
-        const client = createThirdwebClient({ 
-            clientId: "a91dc5f9489704aa3aff08b0566043b9" 
-        });
-
-        const wallets = [
-            createWallet("io.metamask"),
-            createWallet("com.coinbase.wallet"),
-            createWallet("com.okex.wallet"),
-            inAppWallet({ auth: { providers: ["google", "email", "apple"] } })
-        ];
-
-        // 2. BUTON TIKLAMA OLAYI
-        document.getElementById("mainConnectBtn").addEventListener("click", async () => {
-            const btn = document.getElementById("mainConnectBtn");
-            const status = document.getElementById("statusText");
-            
-            btn.innerText = "BAĞLANIYOR...";
-
-            try {
-                // Bu kısım Thirdweb'in v5 modalını manuel tetikler
-                // Not: Eğer tarayıcıda doğrudan JS kullanıyorsak v5 WebComponent daha güvenlidir
-                // O yüzden v5'in evrensel modalını çağırıyoruz
-                const { connect } = await import("https://esm.sh/@thirdweb-dev/react"); 
-                // Eğer hata alırsak alternatif basitleştirilmiş yöntem:
-                
-                if (window.ethereum) {
-                    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-                    btn.innerText = "BAĞLANDI";
-                    btn.style.background = "#059669";
-                    status.innerText = "Hoş geldin: " + accounts[0].substring(0,6) + "..." + accounts[0].substring(38);
-                } else {
-                    alert("Cüzdan bulunamadı! Lütfen Google girişi için sayfayı HTTPS üzerinde çalıştırın.");
-                }
-
-            } catch (err) {
-                console.error(err);
-                btn.innerText = "HATA!";
-            }
-        });
-    </script>
 
 </body>
 </html>
