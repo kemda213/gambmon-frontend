@@ -3,88 +3,137 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gambmon | Pro Connect</title>
+    <title>Gambmon | Ultimate Liquid Interface</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <script src="https://unpkg.com/@thirdweb-dev/sdk@latest/dist/thirdweb-sdk.min.js"></script>
-    <script src="https://unpkg.com/@thirdweb-dev/react-render@latest/dist/react-render.min.js"></script>
-
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
 
     <style>
+        :root { --glass: rgba(255, 255, 255, 0.02); --border: rgba(255, 255, 255, 0.08); }
         body {
             background: #020408; color: white; font-family: 'Plus Jakarta Sans', sans-serif;
             background-image: radial-gradient(circle at 0% 0%, #0d1a35 0%, transparent 50%);
-            min-height: 100vh;
+            min-height: 100vh; margin: 0;
         }
+
+        /* Liquid Glass Kartlar */
         .liquid-card {
-            background: rgba(255,255,255,0.02); backdrop-filter: blur(20px);
-            border: 1px solid rgba(255,255,255,0.08); border-radius: 28px;
+            background: var(--glass); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border); border-radius: 30px;
+            transition: all 0.4s ease;
         }
-        /* Thirdweb Butonunu Sitemize Uydurma */
-        #connect-wallet-container button {
-            background: #2563eb !important;
-            border-radius: 16px !important;
-            font-weight: bold !important;
-            padding: 12px 24px !important;
-        }
+        .liquid-card:hover { border-color: #2563eb; transform: translateY(-5px); }
+
+        /* Kategori Barı */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        
+        /* Thirdweb Connect Butonunu Stilize Etme */
+        #tw-connect { display: flex; justify-content: flex-end; }
+        iframe { border-radius: 20px !important; }
     </style>
 </head>
 <body>
 
-    <nav class="p-6 border-b border-white/5 flex justify-between items-center backdrop-blur-md">
-        <div class="flex items-center gap-2">
-            <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
+    <nav class="p-6 border-b border-white/5 backdrop-blur-xl sticky top-0 z-50 flex justify-between items-center bg-black/50">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
                 <i class="fa-solid fa-droplet text-white"></i>
             </div>
-            <span class="text-2xl font-black italic uppercase">Gambmon</span>
+            <span class="text-2xl font-black italic tracking-tighter uppercase">Gambmon</span>
         </div>
         
-        <div id="connect-wallet-container"></div>
+        <div id="tw-connect"></div>
     </nav>
 
-    <main class="container mx-auto px-6 py-12">
-        <h1 class="text-4xl font-black mb-8 italic">PİYASALAR</h1>
-        
-        <div id="market-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div class="liquid-card p-8">
-                <h3 class="text-xl font-bold mb-6 italic">Bitcoin bu hafta 100k olur mu?</h3>
-                <div class="grid grid-cols-2 gap-4">
-                    <button class="bg-green-500/20 text-green-400 py-4 rounded-2xl font-black border border-green-500/20 hover:bg-green-500 hover:text-white transition">EVET</button>
-                    <button class="bg-red-500/20 text-red-400 py-4 rounded-2xl font-black border border-red-500/20 hover:bg-red-500 hover:text-white transition">HAYIR</button>
-                </div>
-            </div>
+    <div class="py-4 border-b border-white/5 overflow-x-auto no-scrollbar">
+        <div class="container mx-auto px-6 flex gap-6 text-xs font-bold uppercase tracking-widest text-slate-500">
+            <span class="text-blue-500">Trending</span>
+            <span class="hover:text-white cursor-pointer transition">Breaking</span>
+            <span class="hover:text-white cursor-pointer transition">Politics</span>
+            <span class="hover:text-white cursor-pointer transition">Sports</span>
+            <span class="hover:text-white cursor-pointer transition">Crypto</span>
+            <span class="hover:text-white cursor-pointer transition">Geopolitics</span>
+            <span class="hover:text-white cursor-pointer transition">Tech</span>
+            <span class="hover:text-white cursor-pointer transition">World</span>
+            <span class="hover:text-white cursor-pointer transition">Elections</span>
         </div>
+    </div>
+
+    <main class="container mx-auto px-6 py-12">
+        <div class="mb-12">
+            <h1 class="text-4xl font-black italic uppercase tracking-tighter">Canlı Piyasalar</h1>
+            <p class="text-slate-500 mt-2">Remix akıllı kontratınızdan veriler çekiliyor...</p>
+        </div>
+
+        <div id="market-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            </div>
     </main>
+
+    <script type="module">
+        import { createThirdwebClient } from "https://esm.sh/thirdweb";
+        import { createConnectEmbed } from "https://esm.sh/thirdweb/react"; // Not: Bu basitleştirilmiş bir gösterimdir
+
+        // --- AYARLAR ---
+        const CLIENT_ID = "a91dc5f9489704aa3aff08b0566043b9"; // Ücretsiz aldığın ID
+        const CONTRACT_ADDRESS = "0xB58f40e78f65D712c173F969A402E4Fd467D3b48";
+
+        // NOT: Tarayıcı tabanlı direkt import kullanımı için Thirdweb'in "ConnectButton" web-component'ini kullanıyoruz
+    </script>
+
+    <script src="https://unpkg.com/@thirdweb-dev/web-components@latest/dist/index.js"></script>
 
     <script>
         // --- AYARLAR ---
-        const CLIENT_ID = "a91dc5f9489704aa3aff08b0566043b9"; 
-        const CONTRACT_ADDRESS = "0xB58f40e78f65D712c173F969A402E4Fd467D3b48";
+        const CLIENT_ID = "a91dc5f9489704aa3aff08b0566043b9"; // <--- BURAYI DOLDUR
+        const CONTRACT_ADDRESS = "0xB58f40e78f65D712c173F969A402E4Fd467D3b48"; // <--- BURAYI DOLDUR
 
-        // Thirdweb Arayüzünü Başlat
-        // Bu fonksiyon otomatik olarak Google, MetaMask, OKX ve Coinbase'i açar.
-        document.addEventListener("DOMContentLoaded", function() {
-            ThirdwebRender.renderConnectWallet(
-                document.getElementById("connect-wallet-container"),
-                {
-                    clientId: CLIENT_ID,
-                    theme: "dark",
-                    auth: { loginOptional: false },
-                    // İstediğin cüzdanları buraya ekledim
-                    wallets: [
-                        "metamask",
-                        "coinbase",
-                        "google",
-                        "okx"
-                    ],
-                    btnTitle: "Cüzdanı Bağla",
-                    modalTitle: "Gambmon'a Giriş Yap"
+        // Giriş Butonunu Oluştur
+        const connectBtn = document.createElement("thirdweb-connect-button");
+        connectBtn.setAttribute("client-id", CLIENT_ID);
+        connectBtn.setAttribute("theme", "dark");
+        // Google, MetaMask, OKX ve Coinbase'i otomatik dahil eder
+        document.getElementById("tw-connect").appendChild(connectBtn);
+
+        // Kontrat ve Market İşlemleri (Ethers.js)
+        const ABI = [
+            "function piyasalar(uint256) view returns (string soru, uint256 evetToplam, uint256 hayirToplam, bool bitti, int8 kazanan)",
+            "function piyasaSayisi() view returns (uint256)",
+            "function bahisYap(uint256 _id, bool _secim) payable"
+        ];
+
+        async function initMarkets() {
+            if (!window.ethereum) return;
+            const provider = new ethers.providers.Web3Provider(window.ethereum);
+            const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
+            
+            const grid = document.getElementById("market-grid");
+            try {
+                const count = await contract.piyasaSayisi();
+                grid.innerHTML = "";
+                for (let i = 0; i < count; i++) {
+                    const m = await contract.piyasalar(i);
+                    grid.innerHTML += `
+                        <div class="liquid-card p-8">
+                            <span class="text-[10px] font-bold text-blue-500 uppercase tracking-widest">ID: #${i}</span>
+                            <h3 class="text-xl font-bold my-4 italic leading-tight">${m.soru}</h3>
+                            <div class="grid grid-cols-2 gap-4">
+                                <button class="bg-green-500/10 text-green-400 py-4 rounded-2xl font-black border border-green-500/20 hover:bg-green-500 hover:text-white transition">EVET</button>
+                                <button class="bg-red-500/10 text-red-400 py-4 rounded-2xl font-black border border-red-500/20 hover:bg-red-500 hover:text-white transition">HAYIR</button>
+                            </div>
+                        </div>
+                    `;
                 }
-            );
-        });
+            } catch (e) {
+                grid.innerHTML = "<p class='text-slate-500'>Lütfen cüzdan bağlayın veya kontrat adresini kontrol edin.</p>";
+            }
+        }
+
+        // Sayfa yüklendiğinde ve cüzdan değiştiğinde marketleri getir
+        window.onload = initMarkets;
     </script>
 </body>
 </html>
-
