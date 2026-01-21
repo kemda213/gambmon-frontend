@@ -6,12 +6,12 @@
     <title>Gambmon | Liquid Glass Prediction</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
     <style>
         :root {
-            --glass: rgba(255, 255, 255, 0.03);
-            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass: rgba(255, 255, 255, 0.02);
+            --glass-border: rgba(255, 255, 255, 0.08);
             --accent: #3b82f6;
         }
 
@@ -19,89 +19,105 @@
             font-family: 'Plus Jakarta Sans', sans-serif;
             background: #020408;
             color: #ffffff;
+            /* Derinlik katan gradyanlar */
             background-image: 
-                radial-gradient(circle at 0% 0%, #0c162d 0%, transparent 40%),
-                radial-gradient(circle at 100% 100%, #0a1020 0%, transparent 40%);
+                radial-gradient(circle at 0% 0%, #0d1a35 0%, transparent 50%),
+                radial-gradient(circle at 100% 100%, #0a1020 0%, transparent 50%);
             min-height: 100vh;
+            overflow-x: hidden;
         }
 
-        /* Liquid Glass Effect */
-        .liquid-glass {
+        /* Sıvı Cam Kartlar */
+        .liquid-card {
             background: var(--glass);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
             border: 1px solid var(--glass-border);
-            border-radius: 24px;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 28px;
+            transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
 
-        .liquid-glass:hover {
-            border-color: rgba(59, 130, 246, 0.4);
-            transform: translateY(-5px);
-            background: rgba(255, 255, 255, 0.05);
+        .liquid-card:hover {
+            border-color: rgba(59, 130, 246, 0.3);
+            transform: translateY(-8px) scale(1.02);
+            background: rgba(255, 255, 255, 0.04);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
         }
 
-        /* Category Scroll */
-        .no-scrollbar::-webkit-scrollbar { display: none; }
+        /* Kategori Çubuğu Tasarımı */
+        .category-nav {
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none;  /* IE and Edge */
+        }
+        .category-nav::-webkit-scrollbar { display: none; } /* Chrome, Safari */
+
         .category-item {
             white-space: nowrap;
-            padding: 8px 18px;
-            border-radius: 99px;
-            font-size: 13px;
-            font-weight: 600;
+            padding: 10px 20px;
+            border-radius: 14px;
+            font-size: 13.5px;
+            font-weight: 500;
             color: #94a3b8;
             transition: all 0.3s;
             border: 1px solid transparent;
         }
-        .category-item:hover, .category-item.active {
+        .category-item:hover { color: #fff; background: rgba(255,255,255,0.05); }
+        .category-item.active {
             color: #fff;
-            background: rgba(59, 130, 246, 0.15);
-            border-color: rgba(59, 130, 246, 0.3);
+            background: rgba(59, 130, 246, 0.1);
+            border-color: rgba(59, 130, 246, 0.4);
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.1);
         }
 
-        /* Custom Input */
-        .glass-input {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 12px;
-            padding: 10px 15px;
-            color: white;
-            outline: none;
-        }
+        /* Butonlar */
+        .btn-yes { background: rgba(34, 197, 94, 0.08); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.15); }
+        .btn-yes:hover { background: #22c55e; color: #fff; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(34, 197, 94, 0.3); }
+        
+        .btn-no { background: rgba(239, 68, 68, 0.08); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.15); }
+        .btn-no:hover { background: #ef4444; color: #fff; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3); }
 
-        .yes-btn { background: rgba(34, 197, 94, 0.1); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.2); }
-        .yes-btn:hover { background: #22c55e; color: white; }
-        .no-btn { background: rgba(239, 68, 68, 0.1); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.2); }
-        .no-btn:hover { background: #ef4444; color: white; }
+        .btn-wallet {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            transition: all 0.3s;
+        }
+        .btn-wallet:hover { transform: scale(1.05); box-shadow: 0 0 20px rgba(59, 130, 246, 0.4); }
+
+        /* Neon Glow Süslemeleri */
+        .glow-point {
+            position: absolute;
+            width: 150px;
+            height: 150px;
+            background: #3b82f6;
+            filter: blur(120px);
+            opacity: 0.15;
+            z-index: -1;
+        }
     </style>
 </head>
 <body>
 
-    <nav class="sticky top-0 z-50 py-4 px-6 border-b border-white/5 backdrop-blur-xl bg-black/40">
+    <nav class="sticky top-0 z-50 py-5 px-8 border-b border-white/5 backdrop-blur-2xl bg-black/60">
         <div class="container mx-auto flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(37,99,235,0.4)]">
-                    <i class="fa-solid fa-droplet text-white"></i>
+            <div class="flex items-center gap-3 group cursor-pointer">
+                <div class="w-11 h-11 bg-blue-600 rounded-2xl flex items-center justify-center shadow-[0_0_30px_rgba(37,99,235,0.3)] transition-transform group-hover:rotate-12">
+                    <i class="fa-solid fa-droplet text-white text-xl"></i>
                 </div>
-                <span class="text-2xl font-black tracking-tighter uppercase italic">Gambmon</span>
+                <span class="text-2xl font-extrabold tracking-tighter uppercase italic">Gambmon</span>
             </div>
             
-            <div class="flex gap-4">
-                <button onclick="toggleAdmin()" class="px-4 py-2 rounded-xl border border-white/10 text-sm font-bold hover:bg-white/5 transition">
-                    <i class="fa-solid fa-plus mr-2"></i> Market Yönet
-                </button>
-                <button class="px-6 py-2 rounded-xl bg-blue-600 text-white font-bold text-sm shadow-lg shadow-blue-500/20 active:scale-95 transition">
-                    Cüzdan Bağla
+            <div class="flex items-center gap-6">
+                <span class="hidden md:block text-[11px] font-bold text-slate-500 uppercase tracking-widest">Global Vol: $2.4B</span>
+                <button class="btn-wallet px-7 py-3 rounded-2xl text-white font-bold text-sm">
+                    Connect Wallet
                 </button>
             </div>
         </div>
     </nav>
 
-    <div class="py-4 border-b border-white/5 bg-black/20 overflow-x-auto no-scrollbar">
-        <div class="container mx-auto px-6 flex gap-2">
+    <div class="py-5 border-b border-white/5 bg-black/30 sticky top-[84px] z-40 backdrop-blur-md">
+        <div class="container mx-auto px-8 overflow-x-auto category-nav flex gap-3">
             <a href="#" class="category-item active">Trending</a>
-            <a href="#" class="category-item italic text-red-400 font-bold">Breaking</a>
+            <a href="#" class="category-item border-l border-white/10 italic text-rose-500 font-bold">Breaking</a>
             <a href="#" class="category-item">New</a>
             <a href="#" class="category-item">Politics</a>
             <a href="#" class="category-item">Sports</a>
@@ -118,114 +134,72 @@
         </div>
     </div>
 
-    <main class="container mx-auto px-6 py-12">
-        <div class="flex justify-between items-end mb-10">
+    <main class="container mx-auto px-8 py-16 relative">
+        <div class="glow-point" style="top: 10%; left: 10%;"></div>
+        <div class="glow-point" style="bottom: 20%; right: 10%;"></div>
+
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6">
             <div>
-                <h1 class="text-4xl font-extrabold mb-2 tracking-tight">Gelecek Borsası</h1>
-                <p class="text-slate-400">Veriye dayalı tahminlerle likiditeye yön verin.</p>
+                <h1 class="text-5xl font-extrabold mb-4 tracking-tight">Market Dashboard</h1>
+                <p class="text-slate-400 text-lg">Predict the future on the world's most liquid market.</p>
+            </div>
+            <div class="flex bg-white/5 p-1 rounded-2xl border border-white/10">
+                <button class="px-6 py-2 rounded-xl bg-white/10 text-sm font-bold">All Markets</button>
+                <button class="px-6 py-2 rounded-xl text-sm font-bold text-slate-500 hover:text-white transition">My Trades</button>
             </div>
         </div>
 
-        <div id="market-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div id="market-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div class="liquid-card p-8 flex flex-col justify-between min-h-[320px]">
+                <div>
+                    <div class="flex justify-between items-center mb-6">
+                        <span class="text-[10px] font-black bg-blue-500/10 border border-blue-500/20 px-3 py-1.5 rounded-full text-blue-400 uppercase tracking-widest">Politics</span>
+                        <span class="text-[11px] font-bold text-slate-500 uppercase">Vol: $450.2M</span>
+                    </div>
+                    <h3 class="text-xl font-bold leading-tight mb-8">Donald Trump 2024 ABD Seçimlerini kazanacak mı?</h3>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <button class="btn-yes py-4 rounded-2xl font-extrabold text-sm transition-all duration-300">YES %54</button>
+                    <button class="btn-no py-4 rounded-2xl font-extrabold text-sm transition-all duration-300">NO %46</button>
+                </div>
             </div>
+
+            <div class="liquid-card p-8 flex flex-col justify-between min-h-[320px]">
+                <div>
+                    <div class="flex justify-between items-center mb-6">
+                        <span class="text-[10px] font-black bg-orange-500/10 border border-orange-500/20 px-3 py-1.5 rounded-full text-orange-400 uppercase tracking-widest">Crypto</span>
+                        <span class="text-[11px] font-bold text-slate-500 uppercase">Vol: $125.8M</span>
+                    </div>
+                    <h3 class="text-xl font-bold leading-tight mb-8">Bitcoin Mart sonuna kadar 100,000$ barajını aşacak mı?</h3>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <button class="btn-yes py-4 rounded-2xl font-extrabold text-sm transition-all duration-300">YES %32</button>
+                    <button class="btn-no py-4 rounded-2xl font-extrabold text-sm transition-all duration-300">NO %68</button>
+                </div>
+            </div>
+
+            <div class="liquid-card p-8 flex flex-col justify-between min-h-[320px]">
+                <div>
+                    <div class="flex justify-between items-center mb-6">
+                        <span class="text-[10px] font-black bg-purple-500/10 border border-purple-500/20 px-3 py-1.5 rounded-full text-purple-400 uppercase tracking-widest">Tech</span>
+                        <span class="text-[11px] font-bold text-slate-500 uppercase">Vol: $8.4M</span>
+                    </div>
+                    <h3 class="text-xl font-bold leading-tight mb-8">Apple, bu yıl içinde kendi yapay zeka çipini duyuracak mı?</h3>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <button class="btn-yes py-4 rounded-2xl font-extrabold text-sm transition-all duration-300">YES %78</button>
+                    <button class="btn-no py-4 rounded-2xl font-extrabold text-sm transition-all duration-300">NO %22</button>
+                </div>
+            </div>
+        </div>
     </main>
 
-    <div id="admin-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-        <div class="liquid-glass w-full max-w-lg p-8 bg-[#0d1117]">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-2xl font-bold">Market Ekle / Düzenle</h3>
-                <button onclick="toggleAdmin()"><i class="fa-solid fa-xmark text-slate-400"></i></button>
-            </div>
-            <div class="space-y-4">
-                <div>
-                    <label class="text-xs font-bold text-slate-500 uppercase mb-2 block">Soru Başlığı</label>
-                    <input type="text" id="market-title" class="glass-input w-full" placeholder="Örn: Bitcoin 100k olur mu?">
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="text-xs font-bold text-slate-500 uppercase mb-2 block">Hacim ($)</label>
-                        <input type="text" id="market-volume" class="glass-input w-full" placeholder="12.5M">
-                    </div>
-                    <div>
-                        <label class="text-xs font-bold text-slate-500 uppercase mb-2 block">Evet Oranı (%)</label>
-                        <input type="number" id="market-ratio" class="glass-input w-full" placeholder="65">
-                    </div>
-                </div>
-                <button onclick="addMarket()" class="w-full bg-blue-600 py-4 rounded-xl font-bold mt-4 shadow-lg shadow-blue-500/20">Marketi Yayınla</button>
-            </div>
-        </div>
-    </div>
+    <footer class="container mx-auto px-8 py-12 border-t border-white/5 text-center text-slate-600 text-xs tracking-widest uppercase font-bold">
+        &copy; 2026 Gambmon Protocol. All Rights Reserved.
+    </footer>
 
-<script>
-    // Başlangıç Verileri
-    let markets = [
-        { id: 1, title: "Donald Trump 2024 ABD Seçimlerini kazanacak mı?", volume: "450.2M", ratio: 54 },
-        { id: 2, title: "Bitcoin Mart ayı sonuna kadar 100,000$ barajını aşacak mı?", volume: "125.8M", ratio: 32 },
-        { id: 3, title: "SpaceX, Starship'i bu yıl içinde yörüngeye başarıyla yerleştirecek mi?", volume: "8.4M", ratio: 78 }
-    ];
-
-    function renderMarkets() {
-        const grid = document.getElementById('market-grid');
-        grid.innerHTML = "";
-        
-        markets.forEach(m => {
-            grid.innerHTML += `
-                <div class="liquid-glass p-6 flex flex-col justify-between">
-                    <div>
-                        <div class="flex justify-between items-start mb-4">
-                            <span class="text-[10px] font-black bg-white/10 px-2 py-1 rounded text-slate-400 uppercase tracking-tighter">Market #${m.id}</span>
-                            <button onclick="removeMarket(${m.id})" class="text-slate-600 hover:text-red-400 transition"><i class="fa-solid fa-trash-can text-xs"></i></button>
-                        </div>
-                        <h3 class="text-lg font-bold leading-tight mb-6 h-14 line-clamp-2">${m.title}</h3>
-                        <div class="flex items-center gap-2 mb-6">
-                            <div class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
-                            <span class="text-xs font-bold text-slate-500 uppercase tracking-widest">Hacim: $${m.volume}</span>
-                        </div>
-                    </div>
-                    
-                    <div class="grid grid-cols-2 gap-3">
-                        <button class="yes-btn py-3 rounded-xl font-black text-sm transition">EVET %${m.ratio}</button>
-                        <button class="no-btn py-3 rounded-xl font-black text-sm transition">HAYIR %${100 - m.ratio}</button>
-                    </div>
-                </div>
-            `;
-        });
-    }
-
-    function toggleAdmin() {
-        document.getElementById('admin-modal').classList.toggle('hidden');
-    }
-
-    function addMarket() {
-        const title = document.getElementById('market-title').value;
-        const volume = document.getElementById('market-volume').value;
-        const ratio = document.getElementById('market-ratio').value;
-
-        if(!title || !volume || !ratio) return alert("Lütfen tüm alanları doldurun.");
-
-        const newMarket = {
-            id: markets.length + 1,
-            title: title,
-            volume: volume,
-            ratio: parseInt(ratio)
-        };
-
-        markets.unshift(newMarket); // Başa ekle
-        renderMarkets();
-        toggleAdmin();
-        
-        // Formu temizle
-        document.getElementById('market-title').value = "";
-        document.getElementById('market-volume').value = "";
-        document.getElementById('market-ratio').value = "";
-    }
-
-    function removeMarket(id) {
-        markets = markets.filter(m => m.id !== id);
-        renderMarkets();
-    }
-
-    window.onload = renderMarkets;
-</script>
 </body>
 </html>
