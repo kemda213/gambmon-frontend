@@ -3,142 +3,153 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gambmon | Liquid Prediction Pro</title>
+    <title>Gambmon | Decentralized Prediction Market</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
-        :root { --accent: #3b82f6; --bg: #04070d; --card: #0d121f; }
         body { 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
-            background-color: var(--bg); 
-            color: #ffffff;
-            background-image: radial-gradient(circle at 50% -20%, #1e293b 0%, #04070d 100%);
+            font-family: 'Inter', sans-serif; 
+            background-color: #FFFFFF; 
+            color: #111827; 
+            -webkit-font-smoothing: antialiased;
+        }
+        .nav-shadow { box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); }
+        
+        /* Polymarket Kategori Slider */
+        .category-item {
+            white-space: nowrap;
+            padding: 8px 16px;
+            font-weight: 500;
+            color: #6b7280;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        .category-item:hover { color: #111827; }
+        .category-item.active { color: #2563eb; border-bottom-color: #2563eb; }
+
+        /* Market Kartı */
+        .market-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 16px;
+            transition: border-color 0.2s;
+            cursor: pointer;
+        }
+        .market-card:hover { border-color: #9ca3af; }
+
+        /* Polymarket Yes/No Butonları */
+        .btn-yes {
+            background-color: rgba(34, 197, 94, 0.1);
+            color: #16a34a;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .btn-yes:hover { background-color: #16a34a; color: white; }
+        
+        .btn-no {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: #dc2626;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .btn-no:hover { background-color: #dc2626; color: white; }
+
+        /* Arama Çubuğu */
+        .search-container {
+            background-color: #f3f4f6;
+            border: 1px solid transparent;
+            transition: all 0.2s;
+        }
+        .search-container:focus-within {
+            background-color: white;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
         }
 
-        /* Sıvı Cam Efekti */
-        .liquid-card {
-            background: rgba(13, 18, 31, 0.4);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 28px;
-            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
-        }
-        .liquid-card:hover {
-            background: rgba(13, 18, 31, 0.6);
-            border-color: rgba(59, 130, 246, 0.5);
-            transform: translateY(-8px) scale(1.01);
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-        }
-
-        /* Glass Navbar */
-        .nav-blur {
-            background: rgba(4, 7, 13, 0.7);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        /* Neon Progress Bar */
-        .progress-track { background: rgba(255, 255, 255, 0.05); height: 8px; border-radius: 99px; overflow: hidden; }
-        .yes-fill { background: linear-gradient(90deg, #10b981, #34d399); box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); transition: width 1s ease; }
-
-        /* Buton Parlaması */
-        .btn-premium {
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-            transition: all 0.3s ease;
-        }
-        .btn-premium:hover { box-shadow: 0 0 25px rgba(59, 130, 246, 0.4); transform: translateY(-2px); }
-
-        #betSlip { 
-            background: rgba(13, 18, 31, 0.95);
-            backdrop-filter: blur(30px);
-            border-left: 1px solid rgba(255, 255, 255, 0.1);
-            transform: translateX(100%); 
-            transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1); 
-        }
-        #betSlip.open { transform: translateX(0); }
-
-        .chart-wrapper { height: 120px; width: 100%; margin: 15px 0; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 </head>
-<body class="min-h-screen">
+<body>
 
-    <nav class="sticky top-0 z-50 nav-blur">
-        <div class="container mx-auto px-6 flex items-center justify-between h-20">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
-                    <i class="fa-solid fa-bolt-lightning text-white"></i>
+    <nav class="sticky top-0 z-50 bg-white nav-shadow">
+        <div class="container mx-auto px-4 flex items-center justify-between h-16">
+            <div class="flex items-center gap-2 cursor-pointer" onclick="location.reload()">
+                <div class="w-8 h-8 bg-blue-600 rounded flex items-center justify-center">
+                    <i class="fa-solid fa-chart-pie text-white text-sm"></i>
                 </div>
-                <span class="text-2xl font-extrabold tracking-tighter uppercase italic">Gambmon</span>
-            </div>
-            
-            <div class="hidden md:flex bg-white/5 rounded-full px-4 py-2 border border-white/10 w-1/3">
-                <i class="fa-solid fa-magnifying-glass text-gray-500 mt-1 mr-3"></i>
-                <input type="text" placeholder="Piyasaları tara..." class="bg-transparent border-none outline-none text-sm w-full">
+                <span class="text-xl font-bold tracking-tight">Gambmon</span>
             </div>
 
-            <button onclick="connect()" id="connectBtn" class="btn-premium px-8 py-2.5 rounded-full font-bold text-sm">
-                Cüzdanı Bağla
-            </button>
+            <div class="hidden md:flex flex-grow max-w-xl mx-8">
+                <div class="search-container w-full flex items-center px-4 py-2 rounded-lg">
+                    <i class="fa-solid fa-magnifying-glass text-gray-400 mr-3"></i>
+                    <input type="text" placeholder="Markets..." class="bg-transparent border-none outline-none w-full text-sm">
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <button onclick="connect()" id="connectBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-5 rounded-lg text-sm transition">
+                    Bağlan
+                </button>
+            </div>
+        </div>
+
+        <div class="border-t border-gray-100 bg-white">
+            <div class="container mx-auto px-4 flex overflow-x-auto no-scrollbar items-center text-sm">
+                <a href="#" class="category-item active">New</a>
+                <a href="#" class="category-item">Politics</a>
+                <a href="#" class="category-item">Crypto</a>
+                <a href="#" class="category-item">Sports</a>
+                <a href="#" class="category-item">Business</a>
+                <a href="#" class="category-item">Science</a>
+            </div>
         </div>
     </nav>
 
-    <main class="container mx-auto px-6 py-12">
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-16 gap-6">
-            <div>
-                <h1 class="text-4xl md:text-5xl font-extrabold mb-2 tracking-tight">Merkeziyetsiz Borsa</h1>
-                <p class="text-gray-400 text-lg">Geleceği tahmin et, likiditeye yön ver.</p>
-            </div>
-            <div class="flex gap-4">
-                <div class="bg-white/5 p-4 rounded-2xl border border-white/10">
-                    <p class="text-xs text-gray-500 font-bold mb-1 uppercase">Aktif Piyasa</p>
-                    <p class="text-xl font-mono font-bold" id="totalCount">--</p>
+    <main class="container mx-auto px-4 py-8">
+        <div class="flex flex-col lg:flex-row gap-8">
+            
+            <div class="flex-grow">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold">New Markets</h2>
+                    <div class="text-sm text-gray-500 font-medium">Volume: <span class="text-black">$1,245,392</span></div>
                 </div>
-                <div class="bg-white/5 p-4 rounded-2xl border border-white/10">
-                    <p class="text-xs text-gray-500 font-bold mb-1 uppercase">Ağ Durumu</p>
-                    <p class="text-xl font-bold text-green-500 flex items-center gap-2">
-                        <span class="w-2 h-2 bg-green-500 rounded-full animate-ping"></span> Polygon
-                    </p>
-                </div>
-            </div>
-        </div>
 
-        <div id="market-list" class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div id="market-list" class="space-y-3">
+                    </div>
             </div>
+
+            <aside class="hidden lg:block w-80">
+                <div class="border border-gray-200 rounded-xl p-5 sticky top-36">
+                    <h3 class="font-bold mb-4">Top Volume</h3>
+                    <div class="space-y-4 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600 truncate mr-2">Trump wins 2024?</span>
+                            <span class="font-bold">$450M</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600 truncate mr-2">BTC hits $100k?</span>
+                            <span class="font-bold">$120M</span>
+                        </div>
+                    </div>
+                    <button class="w-full mt-6 py-2 text-blue-600 font-semibold border border-blue-600 rounded-lg hover:bg-blue-50 transition">Hepsini Gör</button>
+                </div>
+            </aside>
+        </div>
     </main>
-
-    <div id="betSlip" class="fixed right-0 top-0 h-full w-full md:w-[450px] z-[60] shadow-2xl p-10">
-        <div class="flex justify-between items-center mb-12">
-            <h3 class="text-3xl font-black italic uppercase">Piyasa Emri</h3>
-            <button onclick="closeBetSlip()" class="w-12 h-12 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 transition">
-                <i class="fa-solid fa-xmark text-xl"></i>
-            </button>
-        </div>
-
-        <div id="slipContent" class="space-y-8">
-            </div>
-
-        <div class="absolute bottom-12 left-10 right-10">
-            <button id="confirmBetBtn" class="w-full btn-premium py-5 rounded-3xl font-black text-lg tracking-widest uppercase">
-                Emri Onayla
-            </button>
-        </div>
-    </div>
 
 <script>
     const contractAddress = "0xB58f40e78f65D712c173F969A402E4Fd467D3b48";
     const abi = [
         "function piyasalar(uint256) view returns (string soru, uint256 evetToplam, uint256 hayirToplam, bool bitti, int8 kazanan)",
         "function piyasaSayisi() view returns (uint256)",
-        "function bahisYap(uint256 _id, bool _secim) payable",
-        "function odulCek(uint256 _id)"
+        "function bahisYap(uint256 _id, bool _secim) payable"
     ];
 
-    let signer, contract, selectedMarketId, selectedChoice;
+    let signer, contract;
 
     async function connect() {
         if (!window.ethereum) return alert("MetaMask?");
@@ -146,7 +157,7 @@
         await provider.send("eth_requestAccounts", []);
         signer = provider.getSigner();
         contract = new ethers.Contract(contractAddress, abi, signer);
-        document.getElementById('connectBtn').innerText = "Bağlı";
+        document.getElementById('connectBtn').innerText = "Connected";
         loadMarkets();
     }
 
@@ -155,8 +166,6 @@
         list.innerHTML = "";
         try {
             const count = await contract.piyasaSayisi();
-            document.getElementById('totalCount').innerText = count.toString();
-
             for (let i = count - 1; i >= 0; i--) {
                 const m = await contract.piyasalar(i);
                 const evet = parseFloat(ethers.utils.formatEther(m.evetToplam));
@@ -165,112 +174,41 @@
                 const ratio = total > 0 ? (evet / total) * 100 : 50;
 
                 const cardHTML = `
-                    <div class="liquid-card p-8 flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-center mb-6">
-                                <span class="bg-blue-600/20 text-blue-400 px-4 py-1 rounded-full text-xs font-black border border-blue-500/20">#${i}</span>
-                                <span class="text-xs font-bold text-gray-500 uppercase tracking-widest">Hacim: ${total.toFixed(2)} POL</span>
+                    <div class="market-card flex items-center justify-between">
+                        <div class="flex items-center gap-4 flex-grow">
+                            <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center shrink-0">
+                                <i class="fa-solid fa-question text-gray-400"></i>
                             </div>
-                            <h2 class="text-2xl font-bold leading-tight mb-8 h-16 line-clamp-2">${m.soru}</h2>
-                            
-                            <div class="chart-wrapper">
-                                <canvas id="chart-${i}"></canvas>
-                            </div>
-
-                            <div class="flex justify-between text-sm font-black mb-3">
-                                <span class="text-emerald-400 font-mono">EVET %${ratio.toFixed(1)}</span>
-                                <span class="text-rose-500 font-mono">HAYIR %${(100-ratio).toFixed(1)}</span>
-                            </div>
-                            <div class="progress-track">
-                                <div class="yes-fill" style="width: ${ratio}%"></div>
+                            <div>
+                                <h4 class="font-bold text-gray-900 leading-snug">${m.soru}</h4>
+                                <div class="flex gap-3 mt-1">
+                                    <span class="text-xs text-gray-400 font-medium">Vol: ${total.toFixed(1)} POL</span>
+                                    <span class="text-xs text-blue-600 font-bold uppercase">Ends Dec 31</span>
+                                </div>
                             </div>
                         </div>
-
-                        <div class="flex gap-4 mt-8">
-                            <button onclick="openBetSlip(${i}, 'EVET', ${ratio})" class="flex-grow bg-emerald-500/10 hover:bg-emerald-500 text-emerald-500 hover:text-white border border-emerald-500/20 font-black py-4 rounded-2xl transition">SATIN AL: EVET</button>
-                            <button onclick="openBetSlip(${i}, 'HAYIR', ${100-ratio})" class="flex-grow bg-rose-500/10 hover:bg-rose-500 text-rose-500 hover:text-white border border-rose-500/20 font-black py-4 rounded-2xl transition">SATIN AL: HAYIR</button>
+                        
+                        <div class="flex gap-2 shrink-0 ml-4">
+                            <button onclick="bet(${i}, true)" class="btn-yes px-6 py-2 rounded-lg text-sm min-w-[80px]">Yes %${ratio.toFixed(0)}</button>
+                            <button onclick="bet(${i}, false)" class="btn-no px-6 py-2 rounded-lg text-sm min-w-[80px]">No %${(100-ratio).toFixed(0)}</button>
                         </div>
                     </div>
                 `;
                 list.innerHTML += cardHTML;
-                setTimeout(() => renderChart(`chart-${i}`, ratio), 100);
             }
         } catch(e) { console.error(e); }
     }
 
-    function renderChart(id, ratio) {
-        const ctx = document.getElementById(id).getContext('2d');
-        const color = ratio >= 50 ? '#10b981' : '#f43f5e';
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: [1,2,3,4,5,6],
-                datasets: [{
-                    data: [45, 52, 48, 60, ratio-5, ratio],
-                    borderColor: color,
-                    borderWidth: 4,
-                    fill: true,
-                    backgroundColor: (context) => {
-                        const g = context.chart.ctx.createLinearGradient(0, 0, 0, 120);
-                        g.addColorStop(0, color + '33');
-                        g.addColorStop(1, 'transparent');
-                        return g;
-                    },
-                    tension: 0.4,
-                    pointRadius: 0
-                }]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: { x: { display: false }, y: { display: false } }
-            }
-        });
-    }
-
-    function openBetSlip(id, choice, odds) {
-        selectedMarketId = id;
-        selectedChoice = (choice === 'EVET');
-        document.getElementById('betSlip').classList.add('open');
-        document.getElementById('slipContent').innerHTML = `
-            <div class="space-y-6">
-                <div class="p-8 bg-white/5 rounded-3xl border border-white/10">
-                    <p class="text-xs font-black text-gray-500 uppercase mb-2 tracking-widest">Seçilen Taraf</p>
-                    <h4 class="text-3xl font-extrabold ${selectedChoice ? 'text-emerald-400':'text-rose-500'}">${choice}</h4>
-                </div>
-                <div class="p-8 bg-white/5 rounded-3xl border border-white/10">
-                    <p class="text-xs font-black text-gray-500 uppercase mb-4 tracking-widest">Yatırım Tutarı</p>
-                    <div class="flex items-center justify-between">
-                        <input type="number" id="betAmount" value="1.0" class="bg-transparent text-4xl font-black outline-none w-full">
-                        <span class="text-2xl font-bold text-gray-500">POL</span>
-                    </div>
-                </div>
-                <div class="flex justify-between p-4 px-2">
-                    <span class="text-gray-400 font-bold">Olası Kazanç</span>
-                    <span class="text-emerald-400 text-xl font-black" id="payout">-- POL</span>
-                </div>
-            </div>
-        `;
-        updatePayout();
-    }
-
-    function updatePayout() {
-        const v = document.getElementById('betAmount').value;
-        document.getElementById('payout').innerText = (v * 1.95).toFixed(2) + " POL";
-    }
-
-    function closeBetSlip() { document.getElementById('betSlip').classList.remove('open'); }
-
-    document.getElementById('confirmBetBtn').onclick = async () => {
-        const amt = document.getElementById('betAmount').value;
+    async function bet(id, choice) {
+        if(!contract) return alert("Connect first!");
+        const amt = prompt("Amount (POL):", "1.0");
+        if(!amt) return;
         try {
-            const tx = await contract.bahisYap(selectedMarketId, selectedChoice, { value: ethers.utils.parseEther(amt) });
-            alert("İşlem blockchain'e iletildi...");
+            const tx = await contract.bahisYap(id, choice, { value: ethers.utils.parseEther(amt) });
             await tx.wait();
-            alert("Emir Gerçekleşti!");
-            closeBetSlip(); loadMarkets();
-        } catch(e) { alert("Hata: " + e.message); }
-    };
+            loadMarkets();
+        } catch(e) { alert(e.message); }
+    }
 
     window.onload = loadMarkets;
 </script>
