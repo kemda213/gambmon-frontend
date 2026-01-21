@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Gambmon Pro | Tahmin Pazarı</title>
+    <title>Gambdom Pro | Tahmin Pazarı</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <style>
         body { font-family: sans-serif; background: #0f172a; color: white; text-align: center; padding: 20px; }
@@ -16,12 +16,12 @@
 </head>
 <body>
 
-    <h1>🎲 GAMBMON PRO</h1>
+    <h1>🎲 GAMBDOM PRO</h1>
     <button id="connectBtn" class="btn" style="background:#2563eb; color:white;">Cüzdanı Bağla</button>
     <div id="market-list"></div>
 
 <script>
-    const contractAddress = "YENI_KONTRA_ADRESINIZ";
+    const contractAddress = "0xB58f40e78f65D712c173F969A402E4Fd467D3b48";
     const abi = [
         "function piyasalar(uint256) view returns (string soru, uint256 evetToplam, uint256 hayirToplam, bool bitti, int8 kazanan)",
         "function piyasaSayisi() view returns (uint256)",
@@ -50,7 +50,7 @@
             let actionButtons = `
                 <button class="btn btn-yes" onclick="bet(${i}, true)">EVET</button>
                 <button class="btn btn-no" onclick="bet(${i}, false)">HAYIR</button>`;
-            
+
             if (m.bitti) {
                 actionButtons = `<button class="btn btn-claim" onclick="claim(${i})">🎁 ÖDÜLÜMÜ ÇEK</button>`;
             }
