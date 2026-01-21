@@ -3,194 +3,126 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gambmon | Decentralized Prediction Market</title>
+    <title>Gambmon Master | Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
-        body { 
-            font-family: 'Inter', sans-serif; 
-            background-color: #f9fafb; /* Polymarket açık gri arka plan */
-            color: #111827;
-        }
-        /* Polymarket'in meşhur sidebar ve layout yapısı */
-        .sidebar { width: 240px; border-right: 1px solid #e5e7eb; height: calc(100vh - 64px); position: sticky; top: 64px; }
-        .main-content { flex: 1; padding: 24px; }
-        .market-row { 
-            background: white; 
-            border-bottom: 1px solid #f3f4f6; 
-            transition: background 0.2s; 
-        }
-        .market-row:hover { background: #f9fafb; }
+        /* Profesyonel Tipografi ve Renk Ayarları */
+        body { font-family: 'Inter', sans-serif; background-color: #FFFFFF; color: #111827; overflow-x: hidden; }
         
-        /* Yes/No Butonları - Tam Polymarket Rengi */
-        .btn-yes { background-color: #e6f4ea; color: #1e7e34; }
-        .btn-yes:hover { background-color: #1e7e34; color: white; }
-        .btn-no { background-color: #fce8e6; color: #d93025; }
-        .btn-no:hover { background-color: #d93025; color: white; }
+        /* Layout (Düzen) Yapısı */
+        .app-container { display: grid; grid-template-columns: 260px 1fr 350px; min-height: 100vh; }
         
-        /* Arama Çubuğu */
-        .search-input { 
-            background: #f3f4f6; 
-            border: 1px solid transparent; 
-            border-radius: 8px; 
-            padding: 8px 12px 8px 40px;
+        /* Sol Menü (Sidebar) */
+        .sidebar { border-right: 1px solid #F3F4F6; padding: 24px; position: sticky; top: 0; height: 100vh; }
+        
+        /* Ana İçerik */
+        .content { padding: 32px; background-color: #FAFAFA; border-right: 1px solid #F3F4F6; }
+        
+        /* Sağ Panel (Bahis Paneli) */
+        .right-panel { padding: 24px; position: sticky; top: 0; height: 100vh; background: #FFFFFF; }
+
+        /* Mobil Ayarı (Şimdilik gizli kalsın, profesyonel masaüstü odaklı gidelim) */
+        @media (max-width: 1024px) {
+            .app-container { grid-template-columns: 1fr; }
+            .sidebar, .right-panel { display: none; }
         }
-        .search-input:focus { background: white; border-color: #2563eb; outline: none; box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1); }
+
+        /* Aktif Menü Efekti */
+        .nav-link { 
+            display: flex; align-items: center; gap: 12px; padding: 10px 12px;
+            border-radius: 8px; font-size: 14px; font-weight: 500; color: #6B7280; transition: all 0.2s;
+        }
+        .nav-link:hover { background-color: #F3F4F6; color: #111827; }
+        .nav-link.active { background-color: #EFF6FF; color: #2563EB; }
+
+        /* Buton Stilleri */
+        .btn-yes { background-color: #E6F4EA; color: #1E7E34; border-radius: 8px; font-weight: 600; }
+        .btn-no { background-color: #FCE8E6; color: #D93025; border-radius: 8px; font-weight: 600; }
     </style>
 </head>
-<body class="bg-gray-50">
+<body>
 
-    <nav class="h-16 bg-white border-b border-gray-200 sticky top-0 z-50 flex items-center justify-between px-6">
-        <div class="flex items-center gap-8">
-            <div class="flex items-center gap-2 cursor-pointer">
-                <div class="w-8 h-8 bg-blue-600 rounded-md flex items-center justify-center">
-                    <i class="fa-solid fa-chart-line text-white text-sm"></i>
-                </div>
-                <span class="text-xl font-bold tracking-tight">GAMBMON</span>
+    <div class="app-container">
+        
+        <aside class="sidebar">
+            <div class="flex items-center gap-2 mb-10">
+                <div class="w-8 h-8 bg-blue-600 rounded-lg"></div>
+                <span class="text-xl font-bold tracking-tight">Gambmon</span>
             </div>
-            <div class="relative hidden lg:block w-96">
-                <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-gray-400"></i>
-                <input type="text" placeholder="Piyasaları ara..." class="search-input w-full text-sm">
-            </div>
-        </div>
 
-        <div class="flex items-center gap-4">
-            <span class="text-sm font-medium text-gray-500 hidden sm:block">Volume: $1.2B</span>
-            <button onclick="connect()" id="connectBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg text-sm transition shadow-sm">
-                Bağlan
-            </button>
-        </div>
-    </nav>
-
-    <div class="flex container mx-auto">
-        <aside class="sidebar hidden md:flex flex-col py-6 pr-4 bg-transparent">
-            <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 px-2">Kategoriler</p>
             <nav class="space-y-1">
-                <a href="#" class="flex items-center gap-3 px-3 py-2 text-sm font-semibold text-blue-600 bg-blue-50 rounded-lg">
-                    <i class="fa-solid fa-fire w-5"></i> Popüler
-                </a>
-                <a href="#" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg">
-                    <i class="fa-solid fa-landmark w-5"></i> Siyaset
-                </a>
-                <a href="#" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg">
-                    <i class="fa-brands fa-bitcoin w-5"></i> Kripto
-                </a>
-                <a href="#" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg">
-                    <i class="fa-solid fa-football w-5"></i> Spor
-                </a>
+                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 px-3">Menü</p>
+                <a href="#" class="nav-link active"><i class="fa-solid fa-house"></i> Piyasalar</a>
+                <a href="#" class="nav-link"><i class="fa-solid fa-bolt"></i> Yeni Eklenenler</a>
+                <a href="#" class="nav-link"><i class="fa-solid fa-trophy"></i> Liderlik Tablosu</a>
+                <div class="my-6 border-t border-gray-100"></div>
+                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 px-3">Kategoriler</p>
+                <a href="#" class="nav-link"><i class="fa-solid fa-landmark"></i> Siyaset</a>
+                <a href="#" class="nav-link"><i class="fa-brands fa-bitcoin"></i> Kripto</a>
+                <a href="#" class="nav-link"><i class="fa-solid fa-basketball"></i> Spor</a>
             </nav>
         </aside>
 
-        <main class="main-content">
-            <div class="flex justify-between items-end mb-6">
-                <h1 class="text-2xl font-bold">Yeni Piyasalar</h1>
-                <div class="flex gap-2">
-                    <button class="px-4 py-2 bg-white border border-gray-200 rounded-lg text-xs font-bold hover:border-gray-400 transition">Filtrele</button>
+        <main class="content">
+            <div class="flex justify-between items-center mb-8">
+                <div class="relative w-96">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-gray-400"></i>
+                    <input type="text" placeholder="Piyasa Ara..." class="w-full bg-white border border-gray-200 rounded-lg py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20">
                 </div>
+                <button class="bg-black text-white px-5 py-2 rounded-lg text-sm font-bold shadow-sm">Cüzdanı Bağla</button>
             </div>
 
-            <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-                <div class="grid grid-cols-12 gap-4 px-6 py-3 bg-gray-50 border-b border-gray-200 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-                    <div class="col-span-8">PİYASA</div>
-                    <div class="col-span-2 text-center">EVET</div>
-                    <div class="col-span-2 text-center">HAYIR</div>
-                </div>
+            <h2 class="text-2xl font-bold mb-6">Popüler Piyasalar</h2>
 
-                <div id="market-list">
-                    <div class="px-6 py-20 text-center text-gray-400">
-                        <i class="fa-solid fa-circle-notch fa-spin text-2xl mb-2"></i>
-                        <p>Yükleniyor...</p>
+            <div class="space-y-3" id="market-placeholder">
+                <div class="bg-white border border-gray-200 p-4 rounded-xl flex items-center justify-between hover:border-gray-300 transition cursor-pointer">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 bg-gray-50 rounded-lg border border-gray-100 flex items-center justify-center">
+                            <i class="fa-brands fa-bitcoin text-orange-500 text-xl"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-[15px]">Bitcoin Mart 2024 sonuna kadar 100 bin doları aşar mı?</h4>
+                            <p class="text-xs text-gray-500 mt-0.5">Hacim: $12.4M • Kapanış: 31 Mart</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="btn-yes px-6 py-2.5 text-sm min-w-[90px]">Evet 45¢</button>
+                        <button class="btn-no px-6 py-2.5 text-sm min-w-[90px]">Hayır 55¢</button>
+                    </div>
+                </div>
+                </div>
+        </main>
+
+        <aside class="right-panel">
+            <h3 class="font-bold mb-6 text-lg">İşlem Paneli</h3>
+            
+            <div class="flex flex-col items-center justify-center h-64 border-2 border-dashed border-gray-100 rounded-2xl text-center p-6">
+                <div class="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+                    <i class="fa-solid fa-receipt text-gray-300"></i>
+                </div>
+                <p class="text-sm font-medium text-gray-500">Henüz bir seçim yapmadınız.</p>
+                <p class="text-xs text-gray-400 mt-1">İşlem yapmak için bir markete tıklayın.</p>
+            </div>
+
+            <div class="mt-10">
+                <h4 class="font-bold text-sm mb-4">Son İşlemler</h4>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="text-gray-500">0x4b...2a, Evet satın aldı</span>
+                        <span class="font-bold text-green-600">+$250</span>
+                    </div>
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="text-gray-500">0x91...fa, Hayır satın aldı</span>
+                        <span class="font-bold text-red-600">+$1.2k</span>
                     </div>
                 </div>
             </div>
-        </main>
+        </aside>
+
     </div>
 
-<script>
-    // --- BURAYA DİKKAT: REMIX'TEN ALDIĞIN ADRESİ YAPIŞTIR ---
-    const contractAddress = "0xB58f40e78f65D712c173F969A402E4Fd467D3b48"; 
-    // ---------------------------------------------------
-
-    const abi = [
-        "function piyasalar(uint256) view returns (string soru, uint256 evetToplam, uint256 hayirToplam, bool bitti, int8 kazanan)",
-        "function piyasaSayisi() view returns (uint256)",
-        "function bahisYap(uint256 _id, bool _secim) payable"
-    ];
-
-    let signer, contract;
-
-    async function connect() {
-        if (!window.ethereum) return alert("Lütfen MetaMask kurun.");
-        const provider = new ethers.providers.Web3Provider(window.ethereum);
-        await provider.send("eth_requestAccounts", []);
-        signer = provider.getSigner();
-        contract = new ethers.Contract(contractAddress, abi, signer);
-        document.getElementById('connectBtn').innerText = "Bağlandı";
-        loadMarkets();
-    }
-
-    async function loadMarkets() {
-        const list = document.getElementById('market-list');
-        try {
-            const count = await contract.piyasaSayisi();
-            list.innerHTML = "";
-            for (let i = count - 1; i >= 0; i--) {
-                const m = await contract.piyasalar(i);
-                const evet = parseFloat(ethers.utils.formatEther(m.evetToplam));
-                const hayir = parseFloat(ethers.utils.formatEther(m.hayirToplam));
-                const total = evet + hayir;
-                const ratio = total > 0 ? (evet / total) * 100 : 50;
-
-                list.innerHTML += `
-                    <div class="market-row grid grid-cols-12 gap-4 px-6 py-4 items-center">
-                        <div class="col-span-8 flex items-center gap-4">
-                            <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
-                                <i class="fa-solid fa-chart-simple text-gray-400"></i>
-                            </div>
-                            <div>
-                                <h4 class="text-sm font-bold text-gray-900 leading-tight mb-1">${m.soru}</h4>
-                                <div class="flex items-center gap-3 text-[11px] text-gray-500 font-medium">
-                                    <span>Hacim: ${total.toFixed(2)} POL</span>
-                                    <span class="flex items-center gap-1 text-blue-600"><i class="fa-solid fa-clock text-[9px]"></i> 2024 Sonu</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-span-2">
-                            <button onclick="bet(${i}, true)" class="btn-yes w-full py-2.5 rounded-lg text-sm font-bold transition flex flex-col items-center">
-                                <span>Evet</span>
-                                <span class="text-[10px] opacity-70">${ratio.toFixed(0)}¢</span>
-                            </button>
-                        </div>
-                        <div class="col-span-2">
-                            <button onclick="bet(${i}, false)" class="btn-no w-full py-2.5 rounded-lg text-sm font-bold transition flex flex-col items-center">
-                                <span>Hayır</span>
-                                <span class="text-[10px] opacity-70">${(100-ratio).toFixed(0)}¢</span>
-                            </button>
-                        </div>
-                    </div>
-                `;
-            }
-        } catch(e) { 
-            list.innerHTML = `<div class="p-10 text-center text-red-500 text-sm">Cüzdan bağlı değil veya yanlış ağ.</div>`;
-        }
-    }
-
-    async function bet(id, choice) {
-        if(!contract) return alert("Önce cüzdanı bağlayın.");
-        const amount = prompt("Yatırmak istediğiniz POL miktarı:", "1.0");
-        if(!amount) return;
-        try {
-            const tx = await contract.bahisYap(id, choice, { value: ethers.utils.parseEther(amount) });
-            await tx.wait();
-            loadMarkets();
-        } catch(e) { alert("Hata: " + e.message); }
-    }
-
-    window.onload = loadMarkets;
-</script>
 </body>
 </html>
-
